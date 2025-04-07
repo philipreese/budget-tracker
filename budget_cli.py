@@ -1,5 +1,6 @@
 import os
 import platform
+from typing import Any, List, Tuple
 
 from db import add_transaction, delete_all_transactions
 from models import TransactionType
@@ -22,7 +23,7 @@ def main_menu() -> None:
             add_transaction_with_type(TransactionType.EXPENSE)
         elif choice == "3":
             clear_terminal()
-            print("Viewing summary (not yet implemented)")
+            view_summary()
         elif choice == "4":
             clear_terminal()
             delete_all_transactions()
@@ -74,6 +75,38 @@ def get_transaction_type() -> TransactionType:
             return TransactionType.EXPENSE
         else:
             print("Invalid transaction type. Please enter 'income' or 'expense'.")
+
+
+def calculate_summary(
+    transactions: List[Tuple[Any, ...]],
+) -> Tuple[float, float, float]:
+    """Calculates the summary (total income, expenses, balance)."""
+    total_income: float = 0.0
+    total_expenses: float = 0.0
+    for transaction in transactions:
+        amount: float = transaction[4]
+        transaction_type_str: str = transaction[5]
+        if transaction_type_str == str(TransactionType.INCOME):
+            total_income += amount
+        elif transaction_type_str == str(TransactionType.EXPENSE):
+            total_expenses += amount
+    net_balance = total_income - total_expenses
+    return total_income, total_expenses, net_balance
+
+
+def view_summary() -> None:
+    """Retrieves and displays the transaction summary."""
+    from db import get_all_transactions
+
+    transactions: List[Tuple[Any, ...]] = get_all_transactions()
+    if transactions:
+        total_income, total_expenses, net_balance = calculate_summary(transactions)
+        print("\n--- Transaction Summary ---")
+        print(f"Total Income: ${total_income:.2f}")
+        print(f"Total Expenses: ${total_expenses:.2f}")
+        print(f"Net Balance: ${net_balance:.2f}")
+    else:
+        print("No transactions found.")
 
 
 def clear_terminal() -> None:
