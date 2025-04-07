@@ -1,29 +1,37 @@
-import json
 import sqlite3
+from typing import Tuple, List, Any
 
-DATABASE_NAME = "budget.db"
-SEED_DATA_FILE = "seed_data.json"
+from models import TransactionType
+
+DATABASE_NAME: str = "budget.db"
+SEED_DATA_FILE: str = "seed_data.json"
 
 
-def connect_db():
+def connect() -> Tuple[sqlite3.Connection, sqlite3.Cursor]:
     """Connects to the SQLite database."""
     conn = sqlite3.connect(DATABASE_NAME)
     return conn, conn.cursor()
 
 
-def close_db(conn):
+def close(conn: sqlite3.Connection) -> None:
     """Closes the database connection."""
     if conn:
         conn.close()
 
 
-def add_transaction(date, description, category, amount, transaction_type):
+def add_transaction(
+    date: str,
+    description: str,
+    category: str,
+    amount: float,
+    transaction_type: TransactionType,
+) -> None:
     """Adds a new transaction to the database."""
-    conn, cursor = connect_db()
+    conn, cursor = connect()
     try:
         cursor.execute(
             "INSERT INTO transactions (date, description, category, amount, type) VALUES (?, ?, ?, ?, ?)",
-            (date, description, category, amount, transaction_type),
+            (date, description, category, amount, str(transaction_type)),
         )
         conn.commit()
         print("Transaction added successfully!")
@@ -31,12 +39,26 @@ def add_transaction(date, description, category, amount, transaction_type):
         print(f"Error adding transaction: {e}")
         conn.rollback()
     finally:
-        close_db(conn)
+        close(conn)
 
 
-def delete_all_transactions():
+def get_all_transactions() -> List[Tuple[Any, ...]]:
+    """Retrieves all transactions from the database."""
+    conn, cursor = connect()
+    try:
+        cursor.execute("SELECT * FROM transactions")
+        transactions: List[Tuple[Any, ...]] = cursor.fetchall()
+        return transactions
+    except sqlite3.Error as e:
+        print(f"Error retrieving transactions: {e}")
+        return []
+    finally:
+        close(conn)
+
+
+def delete_all_transactions() -> None:
     """Deletes all transactions from the database."""
-    conn, cursor = connect_db()
+    conn, cursor = connect()
     try:
         cursor.execute("DELETE FROM transactions")
         cursor.execute("DELETE FROM sqlite_sequence WHERE name='transactions'")
@@ -46,41 +68,10 @@ def delete_all_transactions():
         print(f"Error deleting transactions: {e}")
         conn.rollback()
     finally:
-        close_db(conn)
+        close(conn)
 
 
-def get_transaction_date():
-    return input("Enter transaction date (YYYY-MM-DD): ")
-
-
-def get_transaction_description():
-    return input("Enter transaction description: ")
-
-
-def get_transaction_category():
-    return input("Enter transaction category (e.g., food, rent, salary): ")
-
-
-def get_transaction_amount():
-    while True:
-        try:
-            amount_str = input("Enter transaction amount: ")
-            amount = float(amount_str)
-            return amount
-        except ValueError:
-            print("Invalid amount. Please enter a number.")
-
-
-def get_transaction_type():
-    while True:
-        type_choice = input("Enter transaction type (income/expense): ").lower()
-        if type_choice in ["income", "expense"]:
-            return type_choice
-        else:
-            print("Invalid transaction type. Please enter 'income' or 'expense'.")
-
-
-def create_transactions_table():
+def create_transactions_table() -> None:
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
 
@@ -103,25 +94,34 @@ def create_transactions_table():
     )
 
 
-def seed_database():
+def seed() -> None:
     """Reads sample transactions from a JSON file and populates the database."""
+    import json
+
+    conn: sqlite3.Connection | None = None
     try:
         with open(SEED_DATA_FILE, "r") as f:
             transactions = json.load(f)
-            conn, cursor = connect_db()
+            conn, cursor = connect()
             for transaction in transactions:
-                cursor.execute(
-                    "INSERT INTO transactions (date, description, category, amount, type) VALUES (?, ?, ?, ?, ?)",
-                    (
-                        transaction["date"],
-                        transaction["description"],
-                        transaction["category"],
-                        transaction["amount"],
-                        transaction["type"],
-                    ),
-                )
+                try:
+                    transaction_type = TransactionType(transaction["type"])
+                    cursor.execute(
+                        "INSERT INTO transactions (date, description, category, amount, type) VALUES (?, ?, ?, ?, ?)",
+                        (
+                            transaction["date"],
+                            transaction["description"],
+                            transaction["category"],
+                            transaction["amount"],
+                            str(transaction_type),
+                        ),
+                    )
+                except ValueError as e:
+                    print(
+                        f"Warning: Invalid transaction type '{transaction["type"]}' in JSON: {e}"
+                    )
             conn.commit()
-            close_db(conn)
+            close(conn)
             print("Database seeded with sample transactions.")
     except FileNotFoundError:
         print(f"Error: {SEED_DATA_FILE} not found.")
@@ -129,11 +129,13 @@ def seed_database():
         print(f"Error: Could not decode JSON from {SEED_DATA_FILE}.")
     except sqlite3.Error as e:
         print(f"Error seeding database: {e}")
-        if "conn" in locals():
+        if conn:
             conn.rollback()
-            close_db(conn)
+    finally:
+        if conn:
+            close(conn)
 
 
 if __name__ == "__main__":
     create_transactions_table()
-    seed_database()
+    seed()
