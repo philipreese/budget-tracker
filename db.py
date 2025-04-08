@@ -1,3 +1,5 @@
+"""Holds the database functions for the Budget Tracker."""
+
 import sqlite3
 from typing import Tuple, List, Any
 
@@ -72,26 +74,35 @@ def delete_all_transactions() -> None:
 
 
 def create_transactions_table() -> None:
-    conn = sqlite3.connect(DATABASE_NAME)
-    cursor = conn.cursor()
+    """Creates the transaction table if it doesn't exist."""
+    conn, cursor = connect()
+    try:
+        cursor.execute(
+            """
+            SELECT name FROM sqlite_master WHERE type='table' AND name='transactions';
+        """
+        )
+        table_exists = cursor.fetchone() is not None
 
-    CREATE_TABLE_QUERY = """
-    CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT NOT NULL,
-        description TEXT NOT NULL,
-        category TEXT NOT NULL,
-        amount REAL NOT NULL,
-        type TEXT NOT NULL CHECK(type IN ('income', 'expense'))
-    );
-    """
-
-    cursor.execute(CREATE_TABLE_QUERY)
-    conn.commit()
-    conn.close()
-    print(
-        f"Database '{DATABASE_NAME}' created and 'transactions' table set up (if it didn't exist)."
-    )
+        if not table_exists:
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date TEXT NOT NULL,
+                    description TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    amount REAL NOT NULL,
+                    type TEXT NOT NULL CHECK(type IN ('income', 'expense'))
+                )
+            """
+            )
+            conn.commit()
+            print("Transactions table created.")
+    except sqlite3.Error as e:
+        print(f"Error creating transactions table: {e}")
+    finally:
+        close(conn)
 
 
 def seed() -> None:
@@ -100,7 +111,7 @@ def seed() -> None:
 
     conn: sqlite3.Connection | None = None
     try:
-        with open(SEED_DATA_FILE, "r") as f:
+        with open(SEED_DATA_FILE, "r", encoding="utf-8") as f:
             transactions = json.load(f)
             conn, cursor = connect()
             for transaction in transactions:

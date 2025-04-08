@@ -6,6 +6,7 @@ platforms = ["win-64", "linux-64"]
 version = "0.1.0"
 
 [tasks]
+budget-tracker = "python -m budget_cli"
 
 [dependencies]
 python = ">=3.13.2,<3.14"

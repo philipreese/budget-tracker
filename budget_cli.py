@@ -1,80 +1,25 @@
-import os
-import platform
-from typing import Any, List, Tuple
+"""Holds the CLI for the Budget Tracker."""
 
-from db import add_transaction, delete_all_transactions
+import argparse
+from datetime import date
+from typing import Any, List, Tuple
+from db import add_transaction, get_all_transactions, delete_all_transactions
 from models import TransactionType
 
 
-def main_menu() -> None:
-    while True:
-        print("\nBudget Tracker Menu:")
-        print("1. Add Income")
-        print("2. Add Expense")
-        print("3. View Summary")
-        print("4. Delete All Transactions")
-        print("5. Exit")
+def add_transaction_command(
+    args: argparse.Namespace, transaction_type: TransactionType
+) -> None:
+    """Adds a transaction (income or expense) based on arguments."""
+    transaction_date = args.date if args.date else str(date.today())
+    amount = args.amount
+    category = args.category if args.category else "other"
+    description = (
+        args.description if args.description else f"other {transaction_type.value}"
+    )
 
-        choice = input("Enter your choice: ")
-
-        if choice == "1":
-            add_transaction_with_type(TransactionType.INCOME)
-        elif choice == "2":
-            add_transaction_with_type(TransactionType.EXPENSE)
-        elif choice == "3":
-            clear_terminal()
-            view_summary()
-        elif choice == "4":
-            clear_terminal()
-            delete_all_transactions()
-        elif choice == "5":
-            clear_terminal()
-            print("Exiting...")
-            break
-        else:
-            print("Invalid choice. Please try again.")
-
-
-def add_transaction_with_type(type: TransactionType) -> None:
-    clear_terminal()
-    date: str = get_transaction_date()
-    description: str = get_transaction_description()
-    category: str = get_transaction_category()
-    amount: float = get_transaction_amount()
-    add_transaction(date, description, category, amount, type)
-
-
-def get_transaction_date() -> str:
-    return input("Enter transaction date (YYYY-MM-DD): ")
-
-
-def get_transaction_description() -> str:
-    return input("Enter transaction description: ")
-
-
-def get_transaction_category() -> str:
-    return input("Enter transaction category (e.g., food, rent, salary): ")
-
-
-def get_transaction_amount() -> float:
-    while True:
-        try:
-            amount_str = input("Enter transaction amount: ")
-            amount: float = float(amount_str)
-            return amount
-        except ValueError:
-            print("Invalid amount. Please enter a number.")
-
-
-def get_transaction_type() -> TransactionType:
-    while True:
-        type_choice: str = input("Enter transaction type (income/expense): ").lower()
-        if type_choice == "income":
-            return TransactionType.INCOME
-        elif type_choice == "expense":
-            return TransactionType.EXPENSE
-        else:
-            print("Invalid transaction type. Please enter 'income' or 'expense'.")
+    add_transaction(transaction_date, description, category, amount, transaction_type)
+    print(f"{transaction_type.value.capitalize()} added successfully.")
 
 
 def calculate_summary(
@@ -90,14 +35,12 @@ def calculate_summary(
             total_income += amount
         elif transaction_type_str == str(TransactionType.EXPENSE):
             total_expenses += amount
-    net_balance = total_income - total_expenses
+    net_balance: float = total_income - total_expenses
     return total_income, total_expenses, net_balance
 
 
-def view_summary() -> None:
-    """Retrieves and displays the transaction summary."""
-    from db import get_all_transactions
-
+def view_summary_command() -> None:
+    """Command to view the transaction summary."""
     transactions: List[Tuple[Any, ...]] = get_all_transactions()
     if transactions:
         total_income, total_expenses, net_balance = calculate_summary(transactions)
@@ -109,15 +52,92 @@ def view_summary() -> None:
         print("No transactions found.")
 
 
-def clear_terminal() -> None:
-    if platform.system() == "Windows":
-        os.system("cls")
+def delete_transactions_command() -> None:
+    """Command to delete all transactions."""
+    delete_all_transactions()
+
+
+def main():
+    """Main CLI entry."""
+    parser = argparse.ArgumentParser(description="Budget Tracker CLI")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # Subparser for adding income
+    add_income_parser = subparsers.add_parser(
+        "add-income", help="Add an income transaction"
+    )
+    add_income_parser.add_argument(
+        "-d", "--date", type=str, help="Transaction date (YYYY-MM-DD), default is today"
+    )
+    add_income_parser.add_argument(
+        "-a", "--amount", type=float, required=True, help="Transaction amount"
+    )
+    add_income_parser.add_argument(
+        "-c",
+        "--category",
+        type=str,
+        default="other",
+        help='Transaction category, default is "other"',
+    )
+    add_income_parser.add_argument(
+        "-desc",
+        "--description",
+        type=str,
+        default="other income",
+        help="Transaction description",
+    )
+    add_income_parser.set_defaults(
+        func=lambda args: add_transaction_command(args, TransactionType.INCOME)
+    )
+
+    # Subparser for adding expense
+    add_expense_parser = subparsers.add_parser(
+        "add-expense", help="Add an expense transaction"
+    )
+    add_expense_parser.add_argument(
+        "-d", "--date", type=str, help="Transaction date (YYYY-MM-DD), default is today"
+    )
+    add_expense_parser.add_argument(
+        "-a", "--amount", type=float, required=True, help="Transaction amount"
+    )
+    add_expense_parser.add_argument(
+        "-c", "--category", type=str, default="other", help="Transaction category"
+    )
+    add_expense_parser.add_argument(
+        "-desc",
+        "--description",
+        type=str,
+        default="other expense",
+        help="Transaction description",
+    )
+    add_expense_parser.set_defaults(
+        func=lambda args: add_transaction_command(args, TransactionType.EXPENSE)
+    )
+
+    # Subparser for deleting transactions
+    delete_transactions_parser = subparsers.add_parser(
+        "delete-transactions", help="Delete all transactions"
+    )
+    delete_transactions_parser.set_defaults(
+        func=lambda args: delete_transactions_command()
+    )
+
+    # Subparser for viewing summary
+    view_summary_parser = subparsers.add_parser(
+        "view-summary", help="View transaction summary"
+    )
+    view_summary_parser.set_defaults(func=lambda args: view_summary_command())
+
+    args = parser.parse_args()
+
+    if hasattr(args, "func"):
+        args.func(args)
     else:
-        os.system("clear")
+        parser.print_help()
 
 
 if __name__ == "__main__":
     from db import create_transactions_table
 
     create_transactions_table()
-    main_menu()
+    main()
