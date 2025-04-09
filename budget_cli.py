@@ -2,7 +2,7 @@
 
 import argparse
 from datetime import date
-from typing import Any, List, Tuple
+from typing import Any, Callable, List, Tuple
 from db import add_transaction, get_all_transactions, delete_all_transactions
 from models import TransactionType
 
@@ -86,9 +86,10 @@ def main():
         default="other income",
         help="Transaction description",
     )
-    add_income_parser.set_defaults(
-        func=lambda args: add_transaction_command(args, TransactionType.INCOME)
+    income_lambda: Callable[[argparse.Namespace], None] = (
+        lambda args: add_transaction_command(args, TransactionType.INCOME)
     )
+    add_income_parser.set_defaults(func=income_lambda)
 
     # Subparser for adding expense
     add_expense_parser = subparsers.add_parser(
@@ -110,23 +111,28 @@ def main():
         default="other expense",
         help="Transaction description",
     )
-    add_expense_parser.set_defaults(
-        func=lambda args: add_transaction_command(args, TransactionType.EXPENSE)
+    expense_lambda: Callable[[argparse.Namespace], None] = (
+        lambda args: add_transaction_command(args, TransactionType.EXPENSE)
     )
+    add_expense_parser.set_defaults(func=expense_lambda)
 
     # Subparser for deleting transactions
     delete_transactions_parser = subparsers.add_parser(
         "delete-transactions", help="Delete all transactions"
     )
-    delete_transactions_parser.set_defaults(
-        func=lambda args: delete_transactions_command()
+    delete_lambda: Callable[[argparse.Namespace], None] = (
+        lambda args: delete_transactions_command()
     )
+    delete_transactions_parser.set_defaults(func=delete_lambda)
 
     # Subparser for viewing summary
     view_summary_parser = subparsers.add_parser(
         "view-summary", help="View transaction summary"
     )
-    view_summary_parser.set_defaults(func=lambda args: view_summary_command())
+    summary_lambda: Callable[[argparse.Namespace], None] = (
+        lambda args: view_summary_command()
+    )
+    view_summary_parser.set_defaults(func=summary_lambda)
 
     args = parser.parse_args()
 
