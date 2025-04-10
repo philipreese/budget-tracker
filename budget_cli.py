@@ -7,10 +7,10 @@ from models import TransactionType
 from commands_cli import (
     add_expense_command,
     add_income_command,
-    add_transaction_command,
     delete_transaction_command,
     edit_transaction_command,
     get_transaction_command,
+    get_transactions_command,
     view_summary_command,
 )
 from models import TransactionType
@@ -48,10 +48,6 @@ def create_subparsers(parser: argparse.ArgumentParser):
         default="other income",
         help='Transaction description, default is "other income"',
     )
-    income_lambda: Callable[[argparse.Namespace], None] = (
-        lambda args: add_transaction_command(args, TransactionType.INCOME)
-    )
-    add_income_parser.set_defaults(func=income_lambda)
 
     # Subparser for adding expense
     add_expense_parser = subparsers.add_parser(
@@ -77,18 +73,34 @@ def create_subparsers(parser: argparse.ArgumentParser):
         default="other expense",
         help='Transaction description, default is "other expense"',
     )
-    expense_lambda: Callable[[argparse.Namespace], None] = (
-        lambda args: add_transaction_command(args, TransactionType.EXPENSE)
-    )
-    add_expense_parser.set_defaults(func=expense_lambda)
 
+    # Subparser for get transaction
     get_transaction_parser = subparsers.add_parser(
         "get-transaction", help="Get a single transaction by ID"
     )
     get_transaction_parser.add_argument(
         "transaction_id", type=int, help="ID of the transaction"
     )
-    get_transaction_parser.set_defaults(func=get_transaction_command)
+
+    # Subparser for get transactions
+    get_transactions_parser = subparsers.add_parser(
+        "get-transactions", help="Get all transactions with optional filters"
+    )
+    get_transactions_parser.add_argument(
+        "-s",
+        "--start-date",
+        type=str,
+        help="Get transactions starting at this date (YYYY-MM-DD)",
+    )
+    get_transactions_parser.add_argument(
+        "-e",
+        "--end-date",
+        type=str,
+        help="Get transactions up to and including this date (YYYY-MM-DD)",
+    )
+    get_transactions_parser.add_argument(
+        "-c", "--category", type=str, help="Filter transactions by category"
+    )
 
     # Subparser for viewing summary
     view_summary_parser = subparsers.add_parser(
@@ -106,11 +118,6 @@ def create_subparsers(parser: argparse.ArgumentParser):
     view_summary_parser.add_argument(
         "-c", "--category", type=str, help="Filter summary by category"
     )
-
-    summary_lambda: Callable[[argparse.Namespace], None] = (
-        lambda args: view_summary_command(args)
-    )
-    view_summary_parser.set_defaults(func=summary_lambda)
 
     # Subparser for editing a transaction
     edit_transaction_parser = subparsers.add_parser(
@@ -138,20 +145,17 @@ def create_subparsers(parser: argparse.ArgumentParser):
         choices=[transaction_type.name.lower() for transaction_type in TransactionType],
         help="New transaction type",
     )
-    edit_transaction_parser.set_defaults(func=edit_transaction_command)
 
     # Subparser for deleting transactions
     delete_transaction_parser = subparsers.add_parser(
         "delete-transaction",
-        help="Delete transaction by id. If ID is -1, deletes ALL transactions",
+        help="Delete transaction by ID",
     )
     delete_transaction_parser.add_argument(
-        "transaction_id", type=int, help="ID of the transaction to delete"
+        "transaction_id",
+        type=int,
+        help="ID of the transaction to delete. If ID is -1, deletes ALL transactions",
     )
-    delete_lambda: Callable[[argparse.Namespace], None] = (
-        lambda args: delete_transaction_command(args)
-    )
-    delete_transaction_parser.set_defaults(func=delete_lambda)
 
     return subparsers
 
@@ -171,6 +175,10 @@ def main():
             command_function = add_expense_command
         elif args.command == "view-summary":
             command_function = view_summary_command
+        elif args.command == "get-transaction":
+            command_function = get_transaction_command
+        elif args.command == "get-transactions":
+            command_function = get_transactions_command
         elif args.command == "edit-transaction":
             command_function = edit_transaction_command
         elif args.command == "delete-transaction":

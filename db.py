@@ -140,11 +140,42 @@ def get_transactions_by_filters(
         close(conn)
 
 
-def get_all_transactions() -> List[Tuple[Any, ...]]:
-    """Retrieves all transactions from the database."""
+def get_transactions(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    category: Optional[str] = None,
+) -> List[Tuple[Any, ...]]:
+    """
+    Retrieves transactions from the database with optional filtering.
+
+    Args:
+    start_date (Optional[str]): Start date for filtering (YYYY-MM-DD).
+    end_date (Optional[str]): End date for filtering (YYYY-MM-DD).
+    category (Optional[str]): Category for filtering.
+
+    Returns:
+    List[Tuple[Any, ...]]: A list of transaction tuples.
+    """
     conn, cursor = connect()
+    query = GET_TRANSACTIONS
+    conditions: List[str] = []
+    params: List[str] = []
+
+    if start_date:
+        conditions.append("date >= ?")
+        params.append(start_date)
+    if end_date:
+        conditions.append("date <= ?")
+        params.append(end_date)
+    if category:
+        conditions.append("category = ?")
+        params.append(category)
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+
     try:
-        cursor.execute(GET_TRANSACTIONS)
+        cursor.execute(query, params)
         transactions: List[Tuple[Any, ...]] = cursor.fetchall()
         return transactions
     except sqlite3.Error as e:

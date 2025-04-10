@@ -1,12 +1,13 @@
 import argparse
 import calendar
 from datetime import date
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 from db import (
     add_transaction,
     delete_all_transactions,
     delete_transaction,
     get_transaction,
+    get_transactions,
     get_transactions_by_filters,
     update_transaction,
 )
@@ -189,6 +190,33 @@ def get_transaction_command(args: argparse.Namespace) -> None:
     print(f"Category: {transaction[3]}")
     print(f"Amount: ${transaction[4]:.2f}")
     print(f"Type: {transaction[5]}")
+
+
+def get_transactions_command(args: argparse.Namespace) -> None:
+    """Gets transactions by category, optionally within a date range."""
+    start_date: Optional[str] = args.start_date
+    end_date: Optional[str] = args.end_date
+    category: Optional[str] = args.category
+
+    transactions = get_transactions(start_date, end_date, category)
+
+    message = ""
+    if category:
+        message += f" with category '{category}',"
+
+    if start_date and end_date:
+        message += f" from {start_date} to {end_date}"
+    elif start_date:
+        message += f" from {start_date}"
+    elif end_date:
+        message += f" through {end_date}"
+
+    print(f"\n--- Transactions{message} ---")
+    print(f"{len(transactions)} transactions found!\n")
+    for transaction in transactions:
+        print(
+            f"id: {transaction[0]}, date: {transaction[1]}, description: {transaction[2]}, category: {transaction[3]}, amount: {transaction[4]}, type: {transaction[5]}"
+        )
 
 
 def delete_transaction_command(args: argparse.Namespace) -> None:
