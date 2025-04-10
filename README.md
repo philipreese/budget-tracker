@@ -52,9 +52,11 @@ options:
 
 ### view-summary
 
-usage: budget_cli.py view-summary [-h] [-m MONTH]
+usage: budget_cli.py view-summary [-h] [-m MONTH] [-y YEAR] [-c CATEGORY]
 
-|      options      |            description            |
-| :---------------: | :-------------------------------: |
-|    -h, --help     |  show this help message and exit  |
-| -m, --month MONTH | Filter summary by month (YYYY-MM) |
+|         options         |                         description                          |
+| :---------------------: | :----------------------------------------------------------: |
+|       -h, --help        |               show this help message and exit                |
+|    -m, --month MONTH    | Filter summary by month (YYYY-MM or MM if also using --year) |
+|     -y, --year YEAR     |                Filter summary by year (YYYY)                 |
+| -c, --category CATEGORY |                  Filter summary by category                  |

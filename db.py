@@ -1,7 +1,7 @@
 """Holds the database functions for the Budget Tracker."""
 
 import sqlite3
-from typing import Tuple, List, Any
+from typing import Optional, Tuple, List, Any
 
 from models import TransactionType
 
@@ -58,21 +58,40 @@ def get_all_transactions() -> List[Tuple[Any, ...]]:
         close(conn)
 
 
-def get_transactions_by_month(year: str, month: str) -> List[Tuple[Any, ...]]:
-    """Retrieves transactions for a specific year and month."""
+def get_transactions_by_filters(
+    month: Optional[str] = None,
+    year: Optional[str] = None,
+    category: Optional[str] = None,
+) -> List[Tuple[Any, ...]]:
+    """Retrieves transactions based on optional month, year, and category filters."""
     conn, cursor = connect()
+    conditions: List[str] = []
+    params: List[str] = []
+
+    if month:
+        conditions.append("strftime('%Y-%m', date) = ?")
+        if year:
+            month = f"{year}-{month}"
+        params.append(month)
+    if year:
+        conditions.append("strftime('%Y', date) = ?")
+        params.append(year)
+    if category:
+        conditions.append("category = ?")
+        params.append(category)
+
+    where_clause = ""
+    if conditions:
+        where_clause = "WHERE " + " AND ".join(conditions)
+
+    sql = f"SELECT * FROM transactions {where_clause}"
+
     try:
-        cursor.execute(
-            """
-            SELECT * FROM transactions
-            WHERE strftime('%Y', date) = ? AND strftime('%m', date) = ?
-            """,
-            (year, month),
-        )
+        cursor.execute(sql, params)
         transactions: List[Tuple[Any, ...]] = cursor.fetchall()
         return transactions
     except sqlite3.Error as e:
-        print(f"Error retrieving transactions by month: {e}")
+        print(f"Error retrieving transactions by filters: {e}")
         return []
     finally:
         close(conn)

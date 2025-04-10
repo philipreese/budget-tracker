@@ -1,14 +1,10 @@
 """Holds the CLI for the Budget Tracker."""
 
 import argparse
+import calendar
 from datetime import date
 from typing import Any, Callable, List, Tuple
-from db import (
-    add_transaction,
-    get_all_transactions,
-    delete_all_transactions,
-    get_transactions_by_month,
-)
+from db import add_transaction, delete_all_transactions, get_transactions_by_filters
 from models import TransactionType
 
 
@@ -44,21 +40,76 @@ def calculate_summary(
     return total_income, total_expenses, net_balance
 
 
+def get_month_name(month_number: str) -> str:
+    """Converts a month number (MM) to its name."""
+    try:
+        month_int = int(month_number)
+        if 1 <= month_int <= 12:
+            return calendar.month_name[month_int]
+        return ""
+    except ValueError:
+        return ""
+
+
 def view_summary_command(args: argparse.Namespace) -> None:
     """Command to view the transaction summary."""
-    month_filter = args.month
+    month_filter: str = args.month
+    year_filter: str = args.year
+    category_filter: str = args.category
     transactions: List[Tuple[Any, ...]] = []
+    filter_description = "Overall"
+    query_month = None
+    query_year = None
 
     if month_filter:
-        if len(month_filter) != 7 or month_filter[4] != "-":
-            print("Invalid month format. Please use YYYY-MM.")
+        if len(month_filter) == 7 and month_filter[4] == "-":
+            query_year, query_month = month_filter.split("-")
+            month_name = get_month_name(query_month)
+            filter_description = (
+                f"for {month_name} {query_year}"
+                if month_name and query_year
+                else f"for {month_filter}"
+            )
+        elif (
+            0 < len(month_filter) <= 2
+            and month_filter.isdigit()
+            and 1 <= int(month_filter) <= 12
+        ):
+            month_filter = (
+                month_filter if len(month_filter) == 2 else f"0{month_filter}"
+            )
+            query_month = month_filter
+            month_name = get_month_name(query_month)
+            filter_description = f"for {month_name}"
+            if year_filter:
+                query_year = year_filter
+                filter_description = f"for {month_name} {year_filter}"
+            else:
+                print("Must specify year along with month")
+                return
+        else:
+            print("Invalid month format. Please use MM or YYYY-MM.")
             return
-        year, month = month_filter.split("-")
-        transactions = get_transactions_by_month(year, month)
-        print(f"\n--- Transaction Summary for {year}-{month} ---")
-    else:
-        transactions = get_all_transactions()
-        print("\n--- Overall Transaction Summary ---")
+    elif year_filter:
+        if len(year_filter) == 4 and year_filter.isdigit():
+            query_year = year_filter
+            filter_description = f"for {year_filter}"
+        else:
+            print("Invalid year format. Please use YYYY.")
+            return
+
+    if category_filter:
+        filter_description = (
+            f"for category '{category_filter}'"
+            if not month_filter and not year_filter
+            else f"{filter_description}, category '{category_filter}'"
+        )
+
+    transactions = get_transactions_by_filters(
+        month=month_filter, year=year_filter, category=category_filter
+    )
+
+    print(f"\n--- Transaction Summary ({filter_description}) ---")
 
     if transactions:
         total_income, total_expenses, net_balance = calculate_summary(transactions)
@@ -66,10 +117,11 @@ def view_summary_command(args: argparse.Namespace) -> None:
         print(f"Total Expenses: ${total_expenses:.2f}")
         print(f"Net Balance: ${net_balance:.2f}")
     else:
-        message = "No transactions found"
-        if month_filter:
-            message += " for the specified period."
-        print(message)
+        print(
+            "No transactions found for the specified filters."
+            if month_filter or year_filter or category_filter
+            else "No transactions found."
+        )
 
 
 def delete_transactions_command() -> None:
@@ -150,7 +202,16 @@ def main():
         "view-summary", help="View transaction summary"
     )
     view_summary_parser.add_argument(
-        "-m", "--month", type=str, help="Filter summary by month (YYYY-MM)"
+        "-m",
+        "--month",
+        type=str,
+        help="Filter summary by month (YYYY-MM or MM if also using --year)",
+    )
+    view_summary_parser.add_argument(
+        "-y", "--year", type=str, help="Filter summary by year (YYYY)"
+    )
+    view_summary_parser.add_argument(
+        "-c", "--category", type=str, help="Filter summary by category"
     )
 
     summary_lambda: Callable[[argparse.Namespace], None] = (
