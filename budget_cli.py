@@ -4,7 +4,13 @@ import argparse
 import calendar
 from datetime import date
 from typing import Any, Callable, List, Tuple
-from db import add_transaction, delete_all_transactions, get_transactions_by_filters
+from db import (
+    add_transaction,
+    delete_all_transactions,
+    get_transaction,
+    get_transactions_by_filters,
+    update_transaction,
+)
 from models import TransactionType
 
 
@@ -124,6 +130,56 @@ def view_summary_command(args: argparse.Namespace) -> None:
         )
 
 
+def edit_transaction_command(args: argparse.Namespace) -> None:
+    """Command for editing an existing transaction."""
+    transaction_id = args.transaction_id
+
+    if (
+        args.date is None
+        and args.description is None
+        and args.category is None
+        and args.amount is None
+        and args.type is None
+    ):
+        print("Must include at least one option for editing a transaction")
+        return
+
+    # Retrieve the transaction from the database
+    transaction = get_transaction(transaction_id)
+    if not transaction:
+        print(f"Transaction with ID {transaction_id} not found.")
+        return
+
+    # Collect updates from flags
+    new_date = args.date or transaction[1]
+    new_description = args.description or transaction[2]
+    new_category = args.category or transaction[3]
+    new_amount = args.amount or transaction[4]
+    new_type = args.type or transaction[5]
+
+    # Update the transaction in the database
+    update_transaction(
+        transaction_id, new_date, new_description, new_category, new_amount, new_type
+    )
+
+    print("Transaction updated successfully!")
+    get_transaction_command(args)
+
+
+def get_transaction_command(args: argparse.Namespace) -> None:
+    """Command to get a transaction by ID."""
+    transaction = get_transaction(args.transaction_id)
+    if not transaction:
+        print("No transaction exists with that ID.")
+        return
+    print(f"\n--- Transaction ID {transaction[0]} ---")
+    print(f"Date: {transaction[1]}")
+    print(f"Description: {transaction[2]}")
+    print(f"Category: {transaction[3]}")
+    print(f"Amount: ${transaction[4]:.2f}")
+    print(f"Type: {transaction[5]}")
+
+
 def delete_transactions_command() -> None:
     """Command to delete all transactions."""
     delete_all_transactions()
@@ -139,10 +195,10 @@ def main():
         "add-income", help="Add an income transaction"
     )
     add_income_parser.add_argument(
-        "-d", "--date", type=str, help="Transaction date (YYYY-MM-DD), default is today"
+        "-a", "--amount", type=float, required=True, help="Transaction amount"
     )
     add_income_parser.add_argument(
-        "-a", "--amount", type=float, required=True, help="Transaction amount"
+        "-d", "--date", type=str, help="Transaction date (YYYY-MM-DD), default is today"
     )
     add_income_parser.add_argument(
         "-c",
@@ -156,7 +212,7 @@ def main():
         "--description",
         type=str,
         default="other income",
-        help="Transaction description",
+        help='Transaction description, default is "other income"',
     )
     income_lambda: Callable[[argparse.Namespace], None] = (
         lambda args: add_transaction_command(args, TransactionType.INCOME)
@@ -168,25 +224,37 @@ def main():
         "add-expense", help="Add an expense transaction"
     )
     add_expense_parser.add_argument(
-        "-d", "--date", type=str, help="Transaction date (YYYY-MM-DD), default is today"
-    )
-    add_expense_parser.add_argument(
         "-a", "--amount", type=float, required=True, help="Transaction amount"
     )
     add_expense_parser.add_argument(
-        "-c", "--category", type=str, default="other", help="Transaction category"
+        "-d", "--date", type=str, help="Transaction date (YYYY-MM-DD), default is today"
+    )
+    add_expense_parser.add_argument(
+        "-c",
+        "--category",
+        type=str,
+        default="other",
+        help='Transaction category, default is "other"',
     )
     add_expense_parser.add_argument(
         "-desc",
         "--description",
         type=str,
         default="other expense",
-        help="Transaction description",
+        help='Transaction description, default is "other expense"',
     )
     expense_lambda: Callable[[argparse.Namespace], None] = (
         lambda args: add_transaction_command(args, TransactionType.EXPENSE)
     )
     add_expense_parser.set_defaults(func=expense_lambda)
+
+    get_transaction_parser = subparsers.add_parser(
+        "get-transaction", help="Get a single transaction by ID"
+    )
+    get_transaction_parser.add_argument(
+        "transaction_id", type=int, help="ID of the transaction"
+    )
+    get_transaction_parser.set_defaults(func=get_transaction_command)
 
     # Subparser for deleting transactions
     delete_transactions_parser = subparsers.add_parser(
@@ -218,6 +286,34 @@ def main():
         lambda args: view_summary_command(args)
     )
     view_summary_parser.set_defaults(func=summary_lambda)
+
+    # Subparser for editing a transaction
+    edit_transaction_parser = subparsers.add_parser(
+        "edit-transaction", help="Edit an existing transaction"
+    )
+    edit_transaction_parser.add_argument(
+        "transaction_id", type=int, help="ID of the transaction to edit"
+    )
+    edit_transaction_parser.add_argument(
+        "-d", "--date", type=str, help="New transaction date (YYYY-MM-DD)"
+    )
+    edit_transaction_parser.add_argument(
+        "-desc", "--description", type=str, help="New transaction description"
+    )
+    edit_transaction_parser.add_argument(
+        "-c", "--category", type=str, help="New transaction category"
+    )
+    edit_transaction_parser.add_argument(
+        "-a", "--amount", type=float, help="New transaction amount"
+    )
+    edit_transaction_parser.add_argument(
+        "-t",
+        "--type",
+        type=str,
+        choices=[transaction_type.name.lower() for transaction_type in TransactionType],
+        help="New transaction type",
+    )
+    edit_transaction_parser.set_defaults(func=edit_transaction_command)
 
     args = parser.parse_args()
 

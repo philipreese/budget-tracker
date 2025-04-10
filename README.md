@@ -2,61 +2,88 @@
 
 ## Command Line Interface
 
-usage: budget_cli.py [-h] {add-income,add-expense,delete-transactions,view-summary} ...
+usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,delete-transactions,view-summary,edit-transaction}
 
-Budget Tracker CLI
+| positional argument |          description           |
+| :-----------------: | :----------------------------: |
+|     add-income      |   Add an income transaction    |
+|     add-expense     |   Add an expense transaction   |
+|   get-transaction   | Get a single transaction by ID |
+| delete-transactions |    Delete all transactions     |
+|    view-summary     |    View transaction summary    |
+|  edit-transaction   |  Edit an existing transaction  |
 
-positional arguments:
-{add-income,add-expense,delete-transactions,view-summary}
-
-|       command       |        description         |
-| :-----------------: | :------------------------: |
-|     add-income      | Add an income transaction  |
-|     add-expense     | Add an expense transaction |
-| delete-transactions |  Delete all transactions   |
-|    view-summary     |  View transaction summary  |
-
-options:
--h, --help show this help message and exit
+|   option   |           description           |
+| :--------: | :-----------------------------: |
+| -h, --help | show this help message and exit |
 
 ### add-income
 
 usage: budget_cli.py add-income [-h] [-d DATE] -a AMOUNT [-c CATEGORY] [-desc DESCRIPTION]
 
-|             options              |                   description                   |
-| :------------------------------: | :---------------------------------------------: |
-|            -h, --help            |         show this help message and exit         |
-|         -d, --date DATE          | Transaction date (YYYY-MM-DD), default is today |
-|       -a, --amount AMOUNT        |               Transaction amount                |
-|     -c, --category CATEGORY      |              Transaction category               |
-| -desc, --description DESCRIPTION |             Transaction description             |
+|              option              |                    description                     |
+| :------------------------------: | :------------------------------------------------: |
+|            -h, --help            |          show this help message and exit           |
+|       -a, --amount AMOUNT        |                 Transaction amount                 |
+|         -d, --date DATE          |  Transaction date (YYYY-MM-DD), default is today   |
+|     -c, --category CATEGORY      |      Transaction category, default is "other"      |
+| -desc, --description DESCRIPTION | Transaction description, default is "other income" |
 
 ### add-expense
 
 usage: budget_cli.py add-expense [-h] [-d DATE] -a AMOUNT [-c CATEGORY] [-desc DESCRIPTION]
 
-|             options              |                   description                   |
-| :------------------------------: | :---------------------------------------------: |
-|            -h, --help            |         show this help message and exit         |
-|         -d, --date DATE          | Transaction date (YYYY-MM-DD), default is today |
-|       -a, --amount AMOUNT        |               Transaction amount                |
-|     -c, --category CATEGORY      |              Transaction category               |
-| -desc, --description DESCRIPTION |             Transaction description             |
+|              option              |                     description                     |
+| :------------------------------: | :-------------------------------------------------: |
+|            -h, --help            |           show this help message and exit           |
+|       -a, --amount AMOUNT        |                 Transaction amount                  |
+|         -d, --date DATE          |   Transaction date (YYYY-MM-DD), default is today   |
+|     -c, --category CATEGORY      |      Transaction category, default is "other"       |
+| -desc, --description DESCRIPTION | Transaction description, default is "other expense" |
+
+### get-transaction
+usage: budget_cli.py get-transaction [-h] id
+
+| positional argument |      description      |
+| :-----------------: | :-------------------: |
+|   transaction_id    | ID of the transaction |
+
+|   option   |           description           |
+| :--------: | :-----------------------------: |
+| -h, --help | show this help message and exit |
 
 ### delete-transactions
 
 usage: budget_cli.py delete-transactions [-h]
 
-options:
--h, --help show this help message and exit
+|   option   |           description           |
+| :--------: | :-----------------------------: |
+| -h, --help | show this help message and exit |
 
 ### view-summary
 
 usage: budget_cli.py view-summary [-h] [-m MONTH] [-y YEAR] [-c CATEGORY]
 
-|         options         |                         description                          |
+|         option          |                         description                          |
 | :---------------------: | :----------------------------------------------------------: |
 |       -h, --help        |               show this help message and exit                |
 |    -m, --month MONTH    | Filter summary by month (YYYY-MM or MM if also using --year) |
 |     -y, --year YEAR     |                Filter summary by year (YYYY)                 |
 | -c, --category CATEGORY |                  Filter summary by category                  |
+
+### edit-transaction
+
+usage: budget_cli.py edit-transaction [-h] [-d DATE] [-desc DESCRIPTION] [-c CATEGORY] [-a AMOUNT] [-t {INCOME,EXPENSE}] transaction_id
+
+| positional argument |          description          |
+| :-----------------: | :---------------------------: |
+|   transaction_id    | ID of the transaction to edit |
+
+|              option              |            description            |
+| :------------------------------: | :-------------------------------: |
+|            -h, --help            |  show this help message and exit  |
+|         -d, --date DATE          | New transaction date (YYYY-MM-DD) |
+| -desc, --description DESCRIPTION |    New transaction description    |
+|     -c, --category CATEGORY      |     New transaction category      |
+|       -a, --amount AMOUNT        |      New transaction amount       |
+|   -t, --type {INCOME,EXPENSE}    |       New transaction type        |

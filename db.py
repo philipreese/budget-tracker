@@ -97,6 +97,37 @@ def get_transactions_by_filters(
         close(conn)
 
 
+def get_transaction(transaction_id: int) -> Optional[Tuple[Any, ...]]:
+    """Retrieves a single transaction by its ID."""
+    conn, cursor = connect()
+    cursor.execute("SELECT * FROM transactions WHERE id = ?", (transaction_id,))
+    transaction: Optional[Tuple[Any, ...]] = cursor.fetchone()
+    close(conn)
+    return transaction
+
+
+def update_transaction(
+    transaction_id: int,
+    date: str,
+    description: str,
+    category: str,
+    amount: float,
+    type: str,
+) -> None:
+    """Updates an existing transaction in the database."""
+    conn, cursor = connect()
+    cursor.execute(
+        """
+        UPDATE transactions
+        SET date = ?, description = ?, category = ?, amount = ?, type = ?
+        WHERE id = ?
+        """,
+        (date, description, category, amount, type, transaction_id),
+    )
+    conn.commit()
+    close(conn)
+
+
 def delete_all_transactions() -> None:
     """Deletes all transactions from the database."""
     conn, cursor = connect()
