@@ -3,7 +3,12 @@
 import argparse
 from datetime import date
 from typing import Any, Callable, List, Tuple
-from db import add_transaction, get_all_transactions, delete_all_transactions
+from db import (
+    add_transaction,
+    get_all_transactions,
+    delete_all_transactions,
+    get_transactions_by_month,
+)
 from models import TransactionType
 
 
@@ -39,17 +44,32 @@ def calculate_summary(
     return total_income, total_expenses, net_balance
 
 
-def view_summary_command() -> None:
+def view_summary_command(args: argparse.Namespace) -> None:
     """Command to view the transaction summary."""
-    transactions: List[Tuple[Any, ...]] = get_all_transactions()
+    month_filter = args.month
+    transactions: List[Tuple[Any, ...]] = []
+
+    if month_filter:
+        if len(month_filter) != 7 or month_filter[4] != "-":
+            print("Invalid month format. Please use YYYY-MM.")
+            return
+        year, month = month_filter.split("-")
+        transactions = get_transactions_by_month(year, month)
+        print(f"\n--- Transaction Summary for {year}-{month} ---")
+    else:
+        transactions = get_all_transactions()
+        print("\n--- Overall Transaction Summary ---")
+
     if transactions:
         total_income, total_expenses, net_balance = calculate_summary(transactions)
-        print("\n--- Transaction Summary ---")
         print(f"Total Income: ${total_income:.2f}")
         print(f"Total Expenses: ${total_expenses:.2f}")
         print(f"Net Balance: ${net_balance:.2f}")
     else:
-        print("No transactions found.")
+        message = "No transactions found"
+        if month_filter:
+            message += " for the specified period."
+        print(message)
 
 
 def delete_transactions_command() -> None:
@@ -129,8 +149,12 @@ def main():
     view_summary_parser = subparsers.add_parser(
         "view-summary", help="View transaction summary"
     )
+    view_summary_parser.add_argument(
+        "-m", "--month", type=str, help="Filter summary by month (YYYY-MM)"
+    )
+
     summary_lambda: Callable[[argparse.Namespace], None] = (
-        lambda args: view_summary_command()
+        lambda args: view_summary_command(args)
     )
     view_summary_parser.set_defaults(func=summary_lambda)
 

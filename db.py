@@ -58,6 +58,26 @@ def get_all_transactions() -> List[Tuple[Any, ...]]:
         close(conn)
 
 
+def get_transactions_by_month(year: str, month: str) -> List[Tuple[Any, ...]]:
+    """Retrieves transactions for a specific year and month."""
+    conn, cursor = connect()
+    try:
+        cursor.execute(
+            """
+            SELECT * FROM transactions
+            WHERE strftime('%Y', date) = ? AND strftime('%m', date) = ?
+            """,
+            (year, month),
+        )
+        transactions: List[Tuple[Any, ...]] = cursor.fetchall()
+        return transactions
+    except sqlite3.Error as e:
+        print(f"Error retrieving transactions by month: {e}")
+        return []
+    finally:
+        close(conn)
+
+
 def delete_all_transactions() -> None:
     """Deletes all transactions from the database."""
     conn, cursor = connect()
@@ -80,7 +100,7 @@ def create_transactions_table() -> None:
         cursor.execute(
             """
             SELECT name FROM sqlite_master WHERE type='table' AND name='transactions';
-        """
+            """
         )
         table_exists = cursor.fetchone() is not None
 
@@ -95,7 +115,7 @@ def create_transactions_table() -> None:
                     amount REAL NOT NULL,
                     type TEXT NOT NULL CHECK(type IN ('income', 'expense'))
                 )
-            """
+                """
             )
             conn.commit()
             print("Transactions table created.")
