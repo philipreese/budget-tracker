@@ -27,7 +27,7 @@ def add_transaction(
     category: str,
     amount: float,
     transaction_type: TransactionType,
-) -> None:
+) -> int:
     """Adds a new transaction to the database."""
     conn, cursor = connect()
     try:
@@ -36,10 +36,16 @@ def add_transaction(
             (date, description, category, amount, str(transaction_type)),
         )
         conn.commit()
-        print("Transaction added successfully!")
+        transaction_id: Optional[int] = cursor.lastrowid
+        if transaction_id is None:
+            print("Error: Could not retrieve lastrowid.")
+            conn.rollback()
+            return -1
+        return transaction_id
     except sqlite3.Error as e:
         print(f"Error adding transaction: {e}")
         conn.rollback()
+        return -1
     finally:
         close(conn)
 
@@ -113,37 +119,47 @@ def update_transaction(
     category: str,
     amount: float,
     type: str,
-) -> None:
+) -> bool:
     """Updates an existing transaction in the database."""
     conn, cursor = connect()
-    cursor.execute(
-        """
-        UPDATE transactions
-        SET date = ?, description = ?, category = ?, amount = ?, type = ?
-        WHERE id = ?
-        """,
-        (date, description, category, amount, type, transaction_id),
-    )
-    conn.commit()
-    close(conn)
+    try:
+        cursor.execute(
+            """
+            UPDATE transactions
+            SET date = ?, description = ?, category = ?, amount = ?, type = ?
+            WHERE id = ?
+            """,
+            (date, description, category, amount, type, transaction_id),
+        )
+        conn.commit()
+        close(conn)
+    except sqlite3.Error as e:
+        print(f"Error updating transaction: {e}")
+        conn.rollback()
+        return False
+    finally:
+        if conn:
+            close(conn)
+        return True
 
 
-def delete_all_transactions() -> None:
+def delete_all_transactions() -> bool:
     """Deletes all transactions from the database."""
     conn, cursor = connect()
     try:
         cursor.execute("DELETE FROM transactions")
         cursor.execute("DELETE FROM sqlite_sequence WHERE name='transactions'")
         conn.commit()
-        print("Transactions deleted successfully!")
     except sqlite3.Error as e:
         print(f"Error deleting transactions: {e}")
         conn.rollback()
+        return False
     finally:
         close(conn)
+        return True
 
 
-def create_transactions_table() -> None:
+def create_transactions_table() -> bool:
     """Creates the transaction table if it doesn't exist."""
     conn, cursor = connect()
     try:
@@ -171,11 +187,13 @@ def create_transactions_table() -> None:
             print("Transactions table created.")
     except sqlite3.Error as e:
         print(f"Error creating transactions table: {e}")
+        return False
     finally:
         close(conn)
+        return True
 
 
-def seed() -> None:
+def seed() -> bool:
     """Reads sample transactions from a JSON file and populates the database."""
     import json
 
@@ -206,15 +224,19 @@ def seed() -> None:
             print("Database seeded with sample transactions.")
     except FileNotFoundError:
         print(f"Error: {SEED_DATA_FILE} not found.")
+        return False
     except json.JSONDecodeError:
         print(f"Error: Could not decode JSON from {SEED_DATA_FILE}.")
+        return False
     except sqlite3.Error as e:
         print(f"Error seeding database: {e}")
         if conn:
             conn.rollback()
+        return False
     finally:
         if conn:
             close(conn)
+        return True
 
 
 if __name__ == "__main__":
