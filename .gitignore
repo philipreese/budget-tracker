@@ -4,3 +4,5 @@ __pycache__/
 .pixi
 *.egg-info
 *.db
+
+seed_data.json
