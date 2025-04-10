@@ -131,9 +131,28 @@ def view_summary_command(args: argparse.Namespace) -> None:
 
     if transactions:
         total_income, total_expenses, net_balance = calculate_summary(transactions)
-        print(f"Total Income: ${total_income:.2f}")
-        print(f"Total Expenses: ${total_expenses:.2f}")
-        print(f"Net Balance: ${net_balance:.2f}")
+        print(f"Total Income: ${total_income:,.2f}")
+        print(f"Total Expenses: ${total_expenses:,.2f}")
+        print(f"Net Balance: ${net_balance:,.2f}")
+
+        # Detailed Expense Report by Category
+        print("\n--- Expenses by Category ---")
+        expenses = [t for t in transactions if t[5] == "expense"]
+        expenses_by_category: dict[str, float] = {}
+        for expense in expenses:
+            cat = expense[3]
+            amt = expense[4]
+            expenses_by_category[cat] = expenses_by_category.get(cat, 0) + amt
+
+        max_cat_len = (
+            max(len(c) for c in expenses_by_category.keys())
+            if expenses_by_category
+            else 0
+        )
+        print("-" * (max_cat_len + 15))
+        for cat, amt in sorted(expenses_by_category.items()):
+            print(f" {cat:<{max_cat_len}} : ${amt:>{10},.2f} ")
+            print("-" * (max_cat_len + 15))
     else:
         print(
             "No transactions found for the specified filters."
@@ -189,7 +208,7 @@ def get_transaction_command(args: argparse.Namespace) -> None:
     print(f"Description: {transaction[2]}")
     print(f"Category: {transaction[3]}")
     print(f"Amount: ${transaction[4]:.2f}")
-    print(f"Type: {transaction[5]}")
+    print(f"Type: {str(transaction[5]).capitalize()}")
 
 
 def get_transactions_command(args: argparse.Namespace) -> None:
@@ -200,23 +219,27 @@ def get_transactions_command(args: argparse.Namespace) -> None:
 
     transactions = get_transactions(start_date, end_date, category)
 
-    message = ""
-    if category:
-        message += f" with category '{category}',"
+    print("\n--- Transaction Details ---")
 
-    if start_date and end_date:
-        message += f" from {start_date} to {end_date}"
-    elif start_date:
-        message += f" from {start_date}"
-    elif end_date:
-        message += f" through {end_date}"
+    if transactions:
+        # Calculate max lengths for formatting
+        max_date_len = max(len(t[1]) for t in transactions)
+        max_desc_len = max(len(t[2]) for t in transactions)
+        max_cat_len = max(len(t[3]) for t in transactions)
+        max_am_len = max(len(format(t[4], ",.2f")) + 1 for t in transactions)
 
-    print(f"\n--- Transactions{message} ---")
-    print(f"{len(transactions)} transactions found!\n")
-    for transaction in transactions:
-        print(
-            f"id: {transaction[0]}, date: {transaction[1]}, description: {transaction[2]}, category: {transaction[3]}, amount: {transaction[4]}, type: {transaction[5]}"
-        )
+        header = f" {'Date':<{max_date_len}} | {'Description':<{max_desc_len}} | {'Category':<{max_cat_len}} | {'Amount':>{max_am_len}} | Type "
+        print("-" * len(header))
+        print(header)
+        print("-" * len(header))
+
+        for t in transactions:
+            print(
+                f" {t[1]:<{max_date_len}} | {t[2]:<{max_desc_len}} | {t[3]:<{max_cat_len}} | ${t[4]:>{max_am_len - 1},.2f} | {str(t[5]).capitalize()}"
+            )
+            print("-" * len(header))
+    else:
+        print("No transactions to display.")
 
 
 def delete_transaction_command(args: argparse.Namespace) -> None:
