@@ -8,7 +8,7 @@ from commands_cli import (
     add_expense_command,
     add_income_command,
     add_transaction_command,
-    delete_transactions_command,
+    delete_transaction_command,
     edit_transaction_command,
     get_transaction_command,
     view_summary_command,
@@ -90,15 +90,6 @@ def create_subparsers(parser: argparse.ArgumentParser):
     )
     get_transaction_parser.set_defaults(func=get_transaction_command)
 
-    # Subparser for deleting transactions
-    delete_transactions_parser = subparsers.add_parser(
-        "delete-transactions", help="Delete all transactions"
-    )
-    delete_lambda: Callable[[argparse.Namespace], None] = (
-        lambda args: delete_transactions_command(args)
-    )
-    delete_transactions_parser.set_defaults(func=delete_lambda)
-
     # Subparser for viewing summary
     view_summary_parser = subparsers.add_parser(
         "view-summary", help="View transaction summary"
@@ -149,6 +140,19 @@ def create_subparsers(parser: argparse.ArgumentParser):
     )
     edit_transaction_parser.set_defaults(func=edit_transaction_command)
 
+    # Subparser for deleting transactions
+    delete_transaction_parser = subparsers.add_parser(
+        "delete-transaction",
+        help="Delete transaction by id. If ID is -1, deletes ALL transactions",
+    )
+    delete_transaction_parser.add_argument(
+        "transaction_id", type=int, help="ID of the transaction to delete"
+    )
+    delete_lambda: Callable[[argparse.Namespace], None] = (
+        lambda args: delete_transaction_command(args)
+    )
+    delete_transaction_parser.set_defaults(func=delete_lambda)
+
     return subparsers
 
 
@@ -169,8 +173,8 @@ def main():
             command_function = view_summary_command
         elif args.command == "edit-transaction":
             command_function = edit_transaction_command
-        elif args.command == "delete-transactions":
-            command_function = delete_transactions_command
+        elif args.command == "delete-transaction":
+            command_function = delete_transaction_command
 
         if command_function:
             command_function(args)

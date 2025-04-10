@@ -5,6 +5,7 @@ from typing import Any, List, Tuple
 from db import (
     add_transaction,
     delete_all_transactions,
+    delete_transaction,
     get_transaction,
     get_transactions_by_filters,
     update_transaction,
@@ -190,7 +191,18 @@ def get_transaction_command(args: argparse.Namespace) -> None:
     print(f"Type: {transaction[5]}")
 
 
-def delete_transactions_command(_: argparse.Namespace) -> None:
-    """Command to delete all transactions."""
-    if delete_all_transactions():
-        print("Transactions deleted successfully")
+def delete_transaction_command(args: argparse.Namespace) -> None:
+    """Command to delete a transaction by ID."""
+
+    transaction_id = args.transaction_id
+    if transaction_id == -1:
+        if delete_all_transactions():
+            print("All transactions deleted successfully")
+            return
+
+    if delete_transaction(transaction_id):
+        print(f"Transaction with ID {transaction_id} deleted successfully!")
+    else:
+        print(
+            f"Transaction with ID {transaction_id} not found or could not be deleted."
+        )

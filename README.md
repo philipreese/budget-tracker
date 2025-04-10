@@ -2,16 +2,16 @@
 
 ## Command Line Interface
 
-usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,delete-transactions,view-summary,edit-transaction}
+usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,view-summary,edit-transaction,delete-transaction}
 
-| positional argument |          description           |
-| :-----------------: | :----------------------------: |
-|     add-income      |   Add an income transaction    |
-|     add-expense     |   Add an expense transaction   |
-|   get-transaction   | Get a single transaction by ID |
-| delete-transactions |    Delete all transactions     |
-|    view-summary     |    View transaction summary    |
-|  edit-transaction   |  Edit an existing transaction  |
+| positional argument |                           description                           |
+| :-----------------: | :-------------------------------------------------------------: |
+|     add-income      |                    Add an income transaction                    |
+|     add-expense     |                   Add an expense transaction                    |
+|   get-transaction   |                 Get a single transaction by ID                  |
+|    view-summary     |                    View transaction summary                     |
+|  edit-transaction   |                  Edit an existing transaction                   |
+| delete-transaction  | Delete transaction by id. If ID is -1, deletes ALL transactions |
 
 |   option   |           description           |
 | :--------: | :-----------------------------: |
@@ -52,13 +52,6 @@ usage: budget_cli.py get-transaction [-h] id
 | :--------: | :-----------------------------: |
 | -h, --help | show this help message and exit |
 
-### delete-transactions
-
-usage: budget_cli.py delete-transactions [-h]
-
-|   option   |           description           |
-| :--------: | :-----------------------------: |
-| -h, --help | show this help message and exit |
 
 ### view-summary
 
@@ -87,3 +80,15 @@ usage: budget_cli.py edit-transaction [-h] [-d DATE] [-desc DESCRIPTION] [-c CAT
 |     -c, --category CATEGORY      |     New transaction category      |
 |       -a, --amount AMOUNT        |      New transaction amount       |
 |   -t, --type {INCOME,EXPENSE}    |       New transaction type        |
+
+### delete-transaction
+
+usage: budget_cli.py delete-transaction [-h] transaction_id
+
+| positional argument |           description           |
+| :-----------------: | :-----------------------------: |
+|   transaction_id    | ID of the transaction to delete |
+
+|   option   |           description           |
+| :--------: | :-----------------------------: |
+| -h, --help | show this help message and exit |

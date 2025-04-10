@@ -7,6 +7,23 @@ from models import TransactionType
 
 DATABASE_NAME: str = "budget.db"
 SEED_DATA_FILE: str = "seed_data.json"
+SELECT_TRANSACTIONS_TABLE = """
+    SELECT name FROM sqlite_master WHERE type='table' AND name='transactions';
+    """
+CREATE_TRANSACTIONS_TABLE = """
+    CREATE TABLE IF NOT EXISTS transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        description TEXT NOT NULL,
+        category TEXT NOT NULL,
+        amount REAL NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('income', 'expense'))
+    )
+    """
+INSERT_TRANSACTION = "INSERT INTO transactions (date, description, category, amount, type) VALUES (?, ?, ?, ?, ?)"
+GET_TRANSACTION = "SELECT * FROM transactions WHERE id = ?"
+GET_TRANSACTIONS = "SELECT * FROM transactions"
+DELETE_TRANSACTION = "DELETE FROM transactions WHERE id = ?"
 
 
 def connect() -> Tuple[sqlite3.Connection, sqlite3.Cursor]:
@@ -21,6 +38,28 @@ def close(conn: sqlite3.Connection) -> None:
         conn.close()
 
 
+def create_transactions_table() -> bool:
+    """
+    Creates the transaction table if it doesn't exist. Returns True if the
+    transaction table exists or is successfully created; False otherwise.
+    """
+    conn, cursor = connect()
+    try:
+        cursor.execute(SELECT_TRANSACTIONS_TABLE)
+        table_exists = cursor.fetchone() is not None
+
+        if not table_exists:
+            cursor.execute(CREATE_TRANSACTIONS_TABLE)
+            conn.commit()
+            print("Transactions table created.")
+        return True
+    except sqlite3.Error as e:
+        print(f"Error creating transactions table: {e}")
+        return False
+    finally:
+        close(conn)
+
+
 def add_transaction(
     date: str,
     description: str,
@@ -28,11 +67,14 @@ def add_transaction(
     amount: float,
     transaction_type: TransactionType,
 ) -> int:
-    """Adds a new transaction to the database."""
+    """
+    Adds a new transaction to the database. Returns the ID if the add
+    was successful; -1 otherwise.
+    """
     conn, cursor = connect()
     try:
         cursor.execute(
-            "INSERT INTO transactions (date, description, category, amount, type) VALUES (?, ?, ?, ?, ?)",
+            INSERT_TRANSACTION,
             (date, description, category, amount, str(transaction_type)),
         )
         conn.commit()
@@ -50,18 +92,13 @@ def add_transaction(
         close(conn)
 
 
-def get_all_transactions() -> List[Tuple[Any, ...]]:
-    """Retrieves all transactions from the database."""
+def get_transaction(transaction_id: int) -> Optional[Tuple[Any, ...]]:
+    """Retrieves a single transaction by its ID."""
     conn, cursor = connect()
-    try:
-        cursor.execute("SELECT * FROM transactions")
-        transactions: List[Tuple[Any, ...]] = cursor.fetchall()
-        return transactions
-    except sqlite3.Error as e:
-        print(f"Error retrieving transactions: {e}")
-        return []
-    finally:
-        close(conn)
+    cursor.execute(GET_TRANSACTION, (transaction_id,))
+    transaction: Optional[Tuple[Any, ...]] = cursor.fetchone()
+    close(conn)
+    return transaction
 
 
 def get_transactions_by_filters(
@@ -103,13 +140,18 @@ def get_transactions_by_filters(
         close(conn)
 
 
-def get_transaction(transaction_id: int) -> Optional[Tuple[Any, ...]]:
-    """Retrieves a single transaction by its ID."""
+def get_all_transactions() -> List[Tuple[Any, ...]]:
+    """Retrieves all transactions from the database."""
     conn, cursor = connect()
-    cursor.execute("SELECT * FROM transactions WHERE id = ?", (transaction_id,))
-    transaction: Optional[Tuple[Any, ...]] = cursor.fetchone()
-    close(conn)
-    return transaction
+    try:
+        cursor.execute(GET_TRANSACTIONS)
+        transactions: List[Tuple[Any, ...]] = cursor.fetchall()
+        return transactions
+    except sqlite3.Error as e:
+        print(f"Error retrieving transactions: {e}")
+        return []
+    finally:
+        close(conn)
 
 
 def update_transaction(
@@ -133,6 +175,7 @@ def update_transaction(
         )
         conn.commit()
         close(conn)
+        return True
     except sqlite3.Error as e:
         print(f"Error updating transaction: {e}")
         conn.rollback()
@@ -140,7 +183,24 @@ def update_transaction(
     finally:
         if conn:
             close(conn)
-        return True
+
+
+def delete_transaction(transaction_id: int) -> bool:
+    """
+    Deletes a transaction by its ID.
+    Returns True if successful, False otherwise.
+    """
+    conn, cursor = connect()
+    try:
+        cursor.execute("DELETE FROM transactions WHERE id = ?", (transaction_id,))
+        conn.commit()
+        return cursor.rowcount > 0  # rowcount > 0 indicates a row was deleted
+    except sqlite3.Error as e:
+        print(f"Error deleting transaction: {e}")
+        conn.rollback()
+        return False
+    finally:
+        close(conn)
 
 
 def delete_all_transactions() -> bool:
@@ -150,47 +210,13 @@ def delete_all_transactions() -> bool:
         cursor.execute("DELETE FROM transactions")
         cursor.execute("DELETE FROM sqlite_sequence WHERE name='transactions'")
         conn.commit()
+        return True
     except sqlite3.Error as e:
         print(f"Error deleting transactions: {e}")
         conn.rollback()
         return False
     finally:
         close(conn)
-        return True
-
-
-def create_transactions_table() -> bool:
-    """Creates the transaction table if it doesn't exist."""
-    conn, cursor = connect()
-    try:
-        cursor.execute(
-            """
-            SELECT name FROM sqlite_master WHERE type='table' AND name='transactions';
-            """
-        )
-        table_exists = cursor.fetchone() is not None
-
-        if not table_exists:
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS transactions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    date TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    category TEXT NOT NULL,
-                    amount REAL NOT NULL,
-                    type TEXT NOT NULL CHECK(type IN ('income', 'expense'))
-                )
-                """
-            )
-            conn.commit()
-            print("Transactions table created.")
-    except sqlite3.Error as e:
-        print(f"Error creating transactions table: {e}")
-        return False
-    finally:
-        close(conn)
-        return True
 
 
 def seed() -> bool:
@@ -221,7 +247,8 @@ def seed() -> bool:
                     )
             conn.commit()
             close(conn)
-            print("Database seeded with sample transactions.")
+        print("Database seeded with sample transactions.")
+        return True
     except FileNotFoundError:
         print(f"Error: {SEED_DATA_FILE} not found.")
         return False
@@ -236,7 +263,6 @@ def seed() -> bool:
     finally:
         if conn:
             close(conn)
-        return True
 
 
 if __name__ == "__main__":
