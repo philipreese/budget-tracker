@@ -34,9 +34,9 @@
         - Allow filtering the summary by category as well.
   
 ## Phase 3: More Advanced Features (CLI):
-    - Allowing users to edit or delete existing transactions.
-    - Implementing more sophisticated reporting (e.g., expenses by category over time).
-    - Potentially adding configuration options.
+   - Allowing users to edit or delete existing transactions.
+   - Implementing more sophisticated reporting (e.g., expenses by category over time).
+   - Potentially adding configuration options.
 
 ## Phase 4: Exporting and Visualization (CLI)
 
@@ -60,7 +60,7 @@
 - Tasks:
     1. Install FastAPI and Uvicorn:
 
-        `pip install fastapi uvicorn`
+            pip install fastapi uvicorn
 
     2. Create API Endpoints:
         - `/income/`:
@@ -78,10 +78,9 @@
     4. Database Integration in FastAPI:
         - Ensure your FastAPI application can interact with your SQLite database. You might need to create database utility functions that your API routes can call.
     5. Run the FastAPI Application:
-
-        `uvicorn main:app --reload`
-
         (Assuming your FastAPI application is in a file named main.py and the app instance is named app).
+
+            uvicorn main:app --reload
 
 ## Phase 6: Enhancements and Refinements (Optional)
 
