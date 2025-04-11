@@ -13,15 +13,16 @@ from commands_cli import (
     get_transactions_command,
     view_summary_command,
 )
-from models import TransactionType
 
 
 def create_parser() -> argparse.ArgumentParser:
+    """Creates the argument parser"""
     parser = argparse.ArgumentParser(description="Budget Tracker CLI")
     return parser
 
 
 def create_subparsers(parser: argparse.ArgumentParser):
+    """Creates the subparsers for the argument parser"""
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Subparser for adding income
@@ -100,6 +101,20 @@ def create_subparsers(parser: argparse.ArgumentParser):
     )
     get_transactions_parser.add_argument(
         "-c", "--category", type=str, help="Filter transactions by category"
+    )
+    get_transactions_parser.add_argument(
+        "-o",
+        "--order-by",
+        type=str,
+        choices=["date", "desc", "cat", "amt", "type"],
+        help="Sort transactions by column",
+    )
+    get_transactions_parser.add_argument(
+        "-od",
+        "--order-direction",
+        type=str,
+        choices=["asc", "desc"],
+        help="Sort order (ascending (default) or descending)",
     )
 
     # Subparser for viewing summary

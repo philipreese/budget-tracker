@@ -1,3 +1,5 @@
+"""Holds the commands used for the CLI."""
+
 import argparse
 import calendar
 from datetime import date
@@ -15,10 +17,12 @@ from models import TransactionType
 
 
 def add_income_command(args: argparse.Namespace) -> None:
+    """Calls the add_transaction_command with income type."""
     add_transaction_command(args, TransactionType.INCOME)
 
 
 def add_expense_command(args: argparse.Namespace) -> None:
+    """Calls the add_transaction_command with expense type."""
     add_transaction_command(args, TransactionType.EXPENSE)
 
 
@@ -69,11 +73,72 @@ def get_month_name(month_number: str) -> str:
         return ""
 
 
+def get_transaction_command(args: argparse.Namespace) -> None:
+    """Command to get a transaction by ID."""
+    transaction = get_transaction(args.transaction_id)
+    if not transaction:
+        print("No transaction exists with that ID.")
+        return
+    print(f"\n--- Transaction ID {transaction[0]} ---")
+    print(f"Date: {transaction[1]}")
+    print(f"Description: {transaction[2]}")
+    print(f"Category: {transaction[3]}")
+    print(f"Amount: ${transaction[4]:.2f}")
+    print(f"Type: {str(transaction[5]).capitalize()}")
+
+
+def get_transactions_command(args: argparse.Namespace) -> None:
+    """Gets transactions by category, optionally within a date range."""
+    start_date: Optional[str] = args.start_date
+    end_date: Optional[str] = args.end_date
+    category: Optional[str] = args.category
+    order_by: Optional[str] = args.order_by
+    order_direction: Optional[str] = args.order_direction
+
+    transactions = get_transactions(
+        start_date, end_date, category, order_by, order_direction
+    )
+    print(f"\n{len(transactions)} transactions found!")
+    print("\n--- Transaction Details ---")
+
+    if transactions:
+        # Calculate max lengths for formatting
+        max_date_len = max(len(t[1]) for t in transactions)
+        max_desc_len = max(len(t[2]) for t in transactions)
+        max_cat_len = max(max(len(t[3]) for t in transactions), 8)
+        max_am_len = max(len(format(t[4], ",.2f")) + 1 for t in transactions)
+
+        header = (
+            f" {'Date':<{max_date_len}} | "
+            f"{'Description':<{max_desc_len}} | "
+            f"{'Category':<{max_cat_len}} | "
+            f"{'Amount':>{max_am_len+1}} | "
+            f"{'Type':<6} "
+        )
+        print("-" * len(header))
+        print(header)
+        print("-" * len(header))
+
+        for t in transactions:
+            print(
+                (
+                    f" {t[1]:<{max_date_len}} | "
+                    f"{t[2]:<{max_desc_len}} | "
+                    f"{t[3]:<{max_cat_len}} | "
+                    f"$ {t[4]:>{max_am_len - 1},.2f} | "
+                    f"{str(t[5]).capitalize()}"
+                )
+            )
+    else:
+        print("No transactions to display.")
+
+
 def view_summary_command(args: argparse.Namespace) -> None:
     """Command to view the transaction summary."""
-    month_filter: str = args.month
-    year_filter: str = args.year
-    category_filter: str = args.category
+    month_filter: Optional[str] = args.month
+    year_filter: Optional[str] = args.year
+    category_filter: Optional[str] = args.category
+
     transactions: List[Tuple[Any, ...]] = []
     filter_description = "Overall"
     query_month = None
@@ -160,9 +225,7 @@ def _detail_print(
         amt = item[4]
         items_by_category[cat] = items_by_category.get(cat, 0) + amt
 
-    max_cat_len = (
-        max(len(c) for c in items_by_category.keys()) if items_by_category else 0
-    )
+    max_cat_len = max(len(c) for c in items_by_category) if items_by_category else 0
     print("-" * (max_cat_len + 15))
     for cat, amt in sorted(items_by_category.items()):
         print(f" {cat:<{max_cat_len}}  $ {amt:>{10},.2f} ")
@@ -202,50 +265,6 @@ def edit_transaction_command(args: argparse.Namespace) -> None:
 
     print("Transaction updated successfully!")
     get_transaction_command(args)
-
-
-def get_transaction_command(args: argparse.Namespace) -> None:
-    """Command to get a transaction by ID."""
-    transaction = get_transaction(args.transaction_id)
-    if not transaction:
-        print("No transaction exists with that ID.")
-        return
-    print(f"\n--- Transaction ID {transaction[0]} ---")
-    print(f"Date: {transaction[1]}")
-    print(f"Description: {transaction[2]}")
-    print(f"Category: {transaction[3]}")
-    print(f"Amount: ${transaction[4]:.2f}")
-    print(f"Type: {str(transaction[5]).capitalize()}")
-
-
-def get_transactions_command(args: argparse.Namespace) -> None:
-    """Gets transactions by category, optionally within a date range."""
-    start_date: Optional[str] = args.start_date
-    end_date: Optional[str] = args.end_date
-    category: Optional[str] = args.category
-
-    transactions = get_transactions(start_date, end_date, category)
-
-    print("\n--- Transaction Details ---")
-
-    if transactions:
-        # Calculate max lengths for formatting
-        max_date_len = max(len(t[1]) for t in transactions)
-        max_desc_len = max(len(t[2]) for t in transactions)
-        max_cat_len = max(max(len(t[3]) for t in transactions), 8)
-        max_am_len = max(len(format(t[4], ",.2f")) + 1 for t in transactions)
-
-        header = f" {'Date':<{max_date_len}} | {'Description':<{max_desc_len}} | {'Category':<{max_cat_len}} | {'Amount':>{max_am_len+1}} | {'Type':<6} "
-        print("-" * len(header))
-        print(header)
-        print("-" * len(header))
-
-        for t in transactions:
-            print(
-                f" {t[1]:<{max_date_len}} | {t[2]:<{max_desc_len}} | {t[3]:<{max_cat_len}} | $ {t[4]:>{max_am_len - 1},.2f} | {str(t[5]).capitalize()}"
-            )
-    else:
-        print("No transactions to display.")
 
 
 def delete_transaction_command(args: argparse.Namespace) -> None:

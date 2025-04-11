@@ -56,15 +56,16 @@ usage: budget_cli.py get-transaction [-h] id
 
 ### get-transactions
 
-usage: budget_cli.py get-transactions [-h] [-s START_DATE] [-e END_DATE] [-c CATEGORY]
+usage: budget_cli.py get-transactions [-h] [-s START_DATE] [-e END_DATE] [-c CATEGORY] [-o {date,desc,cat,amt,type}] [-od {asc,desc}]
 
-|           option            |                         description                         |
-| :-------------------------: | :---------------------------------------------------------: |
-|         -h, --help          |               show this help message and exit               |
-| -s, --start-date START_DATE |     Get transactions starting at this date (YYYY-MM-DD)     |
-|   -e, --end-date END_DATE   | Get transactions up to and including this date (YYYY-MM-DD) |
-|   -c, --category CATEGORY   |               Filter transactions by category               |
-
+|                 option                  |                         description                         |
+| :-------------------------------------: | :---------------------------------------------------------: |
+|               -h, --help                |               show this help message and exit               |
+|       -s, --start-date START_DATE       |     Get transactions starting at this date (YYYY-MM-DD)     |
+|         -e, --end-date END_DATE         | Get transactions up to and including this date (YYYY-MM-DD) |
+|         -c, --category CATEGORY         |               Filter transactions by category               |
+| -o, --order-by {date,desc,cat,amt,type} |                 Sort transactions by column                 |
+|    -od, --order-direction {asc,desc}    |       Sort order (ascending (default) or descending)        |
 
 ### view-summary
 

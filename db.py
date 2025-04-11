@@ -20,7 +20,10 @@ CREATE_TRANSACTIONS_TABLE = """
         type TEXT NOT NULL CHECK(type IN ('income', 'expense'))
     )
     """
-INSERT_TRANSACTION = "INSERT INTO transactions (date, description, category, amount, type) VALUES (?, ?, ?, ?, ?)"
+INSERT_TRANSACTION = """
+    INSERT INTO transactions (date, description, category, amount, type)
+    VALUES (?, ?, ?, ?, ?)
+    """
 GET_TRANSACTION = "SELECT * FROM transactions WHERE id = ?"
 GET_TRANSACTIONS = "SELECT * FROM transactions"
 DELETE_TRANSACTION = "DELETE FROM transactions WHERE id = ?"
@@ -144,6 +147,8 @@ def get_transactions(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     category: Optional[str] = None,
+    order_by: Optional[str] = None,
+    order_direction: Optional[str] = None,
 ) -> List[Tuple[Any, ...]]:
     """
     Retrieves transactions from the database with optional filtering.
@@ -174,6 +179,27 @@ def get_transactions(
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
 
+    if order_by:
+        match order_by:
+            case "date":
+                pass
+            case "desc":
+                order_by = "description"
+            case "cat":
+                order_by = "category"
+            case "amt":
+                order_by = "amount"
+            case "type":
+                pass
+            case _:
+                raise ValueError(f"Invalid order_by column: {order_by}")
+        query += f" ORDER BY {order_by}"
+
+    if order_direction:
+        if order_direction.upper() not in ("ASC", "DESC"):
+            raise ValueError(f"Invalid order_direction: {order_direction}")
+        query += f" {order_direction.upper()}"
+
     try:
         cursor.execute(query, params)
         transactions: List[Tuple[Any, ...]] = cursor.fetchall()
@@ -191,7 +217,7 @@ def update_transaction(
     description: str,
     category: str,
     amount: float,
-    type: str,
+    transaction_type: str,
 ) -> bool:
     """Updates an existing transaction in the database."""
     conn, cursor = connect()
@@ -202,7 +228,7 @@ def update_transaction(
             SET date = ?, description = ?, category = ?, amount = ?, type = ?
             WHERE id = ?
             """,
-            (date, description, category, amount, type, transaction_id),
+            (date, description, category, amount, transaction_type, transaction_id),
         )
         conn.commit()
         close(conn)
@@ -263,7 +289,10 @@ def seed() -> bool:
                 try:
                     transaction_type = TransactionType(transaction["type"])
                     cursor.execute(
-                        "INSERT INTO transactions (date, description, category, amount, type) VALUES (?, ?, ?, ?, ?)",
+                        """
+                        INSERT INTO transactions (date, description, category, amount, type)
+                        VALUES (?, ?, ?, ?, ?)
+                        """,
                         (
                             transaction["date"],
                             transaction["description"],
