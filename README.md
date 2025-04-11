@@ -68,7 +68,7 @@ usage: budget_cli.py get-transactions [-h] [-s START_DATE] [-e END_DATE] [-c CAT
 
 ### view-summary
 
-usage: budget_cli.py view-summary [-h] [-m MONTH] [-y YEAR] [-c CATEGORY]
+usage: budget_cli.py view-summary [-h] [-m MONTH] [-y YEAR] [-c CATEGORY] [-e] [-i]
 
 |         option          |                         description                          |
 | :---------------------: | :----------------------------------------------------------: |
@@ -76,6 +76,8 @@ usage: budget_cli.py view-summary [-h] [-m MONTH] [-y YEAR] [-c CATEGORY]
 |    -m, --month MONTH    | Filter summary by month (YYYY-MM or MM if also using --year) |
 |     -y, --year YEAR     |                Filter summary by year (YYYY)                 |
 | -c, --category CATEGORY |                  Filter summary by category                  |
+|      -e, --expense      |      Show expense summary by category, default is False      |
+|      -i, --income       |      Show income summary by category, default is False       |
 
 ### edit-transaction
 

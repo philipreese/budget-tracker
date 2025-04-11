@@ -135,30 +135,37 @@ def view_summary_command(args: argparse.Namespace) -> None:
         print(f"Total Expenses: ${total_expenses:,.2f}")
         print(f"Net Balance: ${net_balance:,.2f}")
 
-        # Detailed Expense Report by Category
-        print("\n--- Expenses by Category ---")
-        expenses = [t for t in transactions if t[5] == "expense"]
-        expenses_by_category: dict[str, float] = {}
-        for expense in expenses:
-            cat = expense[3]
-            amt = expense[4]
-            expenses_by_category[cat] = expenses_by_category.get(cat, 0) + amt
-
-        max_cat_len = (
-            max(len(c) for c in expenses_by_category.keys())
-            if expenses_by_category
-            else 0
-        )
-        print("-" * (max_cat_len + 15))
-        for cat, amt in sorted(expenses_by_category.items()):
-            print(f" {cat:<{max_cat_len}} : ${amt:>{10},.2f} ")
-            print("-" * (max_cat_len + 15))
+        if args.expense:
+            _detail_print(transactions, TransactionType.EXPENSE)
+        if args.income:
+            _detail_print(transactions, TransactionType.INCOME)
     else:
         print(
             "No transactions found for the specified filters."
             if month_filter or year_filter or category_filter
             else "No transactions found."
         )
+
+
+def _detail_print(
+    transactions: List[Tuple[Any, ...]], transaction_type: TransactionType
+):
+    type_str = transaction_type.name.lower()
+
+    print(f"\n--- {type_str.capitalize()} by Category ---")
+    items = [t for t in transactions if t[5] == type_str]
+    items_by_category: dict[str, float] = {}
+    for item in items:
+        cat = item[3]
+        amt = item[4]
+        items_by_category[cat] = items_by_category.get(cat, 0) + amt
+
+    max_cat_len = (
+        max(len(c) for c in items_by_category.keys()) if items_by_category else 0
+    )
+    print("-" * (max_cat_len + 15))
+    for cat, amt in sorted(items_by_category.items()):
+        print(f" {cat:<{max_cat_len}}  $ {amt:>{10},.2f} ")
 
 
 def edit_transaction_command(args: argparse.Namespace) -> None:
@@ -225,19 +232,18 @@ def get_transactions_command(args: argparse.Namespace) -> None:
         # Calculate max lengths for formatting
         max_date_len = max(len(t[1]) for t in transactions)
         max_desc_len = max(len(t[2]) for t in transactions)
-        max_cat_len = max(len(t[3]) for t in transactions)
+        max_cat_len = max(max(len(t[3]) for t in transactions), 8)
         max_am_len = max(len(format(t[4], ",.2f")) + 1 for t in transactions)
 
-        header = f" {'Date':<{max_date_len}} | {'Description':<{max_desc_len}} | {'Category':<{max_cat_len}} | {'Amount':>{max_am_len}} | Type "
+        header = f" {'Date':<{max_date_len}} | {'Description':<{max_desc_len}} | {'Category':<{max_cat_len}} | {'Amount':>{max_am_len+1}} | {'Type':<6} "
         print("-" * len(header))
         print(header)
         print("-" * len(header))
 
         for t in transactions:
             print(
-                f" {t[1]:<{max_date_len}} | {t[2]:<{max_desc_len}} | {t[3]:<{max_cat_len}} | ${t[4]:>{max_am_len - 1},.2f} | {str(t[5]).capitalize()}"
+                f" {t[1]:<{max_date_len}} | {t[2]:<{max_desc_len}} | {t[3]:<{max_cat_len}} | $ {t[4]:>{max_am_len - 1},.2f} | {str(t[5]).capitalize()}"
             )
-            print("-" * len(header))
     else:
         print("No transactions to display.")
 

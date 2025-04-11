@@ -118,6 +118,20 @@ def create_subparsers(parser: argparse.ArgumentParser):
     view_summary_parser.add_argument(
         "-c", "--category", type=str, help="Filter summary by category"
     )
+    view_summary_parser.add_argument(
+        "-e",
+        "--expense",
+        action="store_const",
+        const=True,
+        help="Show expense summary by category, default is False",
+    )
+    view_summary_parser.add_argument(
+        "-i",
+        "--income",
+        action="store_const",
+        const=True,
+        help="Show income summary by category, default is False",
+    )
 
     # Subparser for editing a transaction
     edit_transaction_parser = subparsers.add_parser(
