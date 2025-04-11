@@ -3,11 +3,14 @@
 import argparse
 import calendar
 from datetime import date
+import json
 from typing import Any, List, Optional, Tuple
 from db import (
+    CONFIG_FILE,
     add_transaction,
     delete_all_transactions,
     delete_transaction,
+    get_config,
     get_transaction,
     get_transactions,
     get_transactions_by_filters,
@@ -75,6 +78,8 @@ def get_month_name(month_number: str) -> str:
 
 def get_transaction_command(args: argparse.Namespace) -> None:
     """Command to get a transaction by ID."""
+
+    config = get_config()
     transaction = get_transaction(args.transaction_id)
     if not transaction:
         print("No transaction exists with that ID.")
@@ -83,12 +88,14 @@ def get_transaction_command(args: argparse.Namespace) -> None:
     print(f"Date: {transaction[1]}")
     print(f"Description: {transaction[2]}")
     print(f"Category: {transaction[3]}")
-    print(f"Amount: ${transaction[4]:.2f}")
+    print(f"Amount: {config["currency_symbol"]}{transaction[4]:.2f}")
     print(f"Type: {str(transaction[5]).capitalize()}")
 
 
 def get_transactions_command(args: argparse.Namespace) -> None:
     """Gets transactions by category, optionally within a date range."""
+
+    config = get_config()
     start_date: Optional[str] = args.start_date
     end_date: Optional[str] = args.end_date
     category: Optional[str] = args.category
@@ -125,7 +132,7 @@ def get_transactions_command(args: argparse.Namespace) -> None:
                     f" {t[1]:<{max_date_len}} | "
                     f"{t[2]:<{max_desc_len}} | "
                     f"{t[3]:<{max_cat_len}} | "
-                    f"$ {t[4]:>{max_am_len - 1},.2f} | "
+                    f"{config["currency_symbol"]} {t[4]:>{max_am_len - 1},.2f} | "
                     f"{str(t[5]).capitalize()}"
                 )
             )
@@ -135,6 +142,8 @@ def get_transactions_command(args: argparse.Namespace) -> None:
 
 def view_summary_command(args: argparse.Namespace) -> None:
     """Command to view the transaction summary."""
+
+    config = get_config()
     month_filter: Optional[str] = args.month
     year_filter: Optional[str] = args.year
     category_filter: Optional[str] = args.category
@@ -195,15 +204,16 @@ def view_summary_command(args: argparse.Namespace) -> None:
     print(f"\n--- Transaction Summary ({filter_description}) ---")
 
     if transactions:
+        currency_symbol = config["currency_symbol"]
         total_income, total_expenses, net_balance = calculate_summary(transactions)
-        print(f"Total Income: ${total_income:,.2f}")
-        print(f"Total Expenses: ${total_expenses:,.2f}")
-        print(f"Net Balance: ${net_balance:,.2f}")
+        print(f"Total Income: {currency_symbol}{total_income:,.2f}")
+        print(f"Total Expenses: {currency_symbol}{total_expenses:,.2f}")
+        print(f"Net Balance: {currency_symbol}{net_balance:,.2f}")
 
         if args.expense:
-            _detail_print(transactions, TransactionType.EXPENSE)
+            _detail_print(transactions, TransactionType.EXPENSE, currency_symbol)
         if args.income:
-            _detail_print(transactions, TransactionType.INCOME)
+            _detail_print(transactions, TransactionType.INCOME, currency_symbol)
     else:
         print(
             "No transactions found for the specified filters."
@@ -213,7 +223,9 @@ def view_summary_command(args: argparse.Namespace) -> None:
 
 
 def _detail_print(
-    transactions: List[Tuple[Any, ...]], transaction_type: TransactionType
+    transactions: List[Tuple[Any, ...]],
+    transaction_type: TransactionType,
+    currency_symbol: str,
 ):
     type_str = transaction_type.name.lower()
 
@@ -228,11 +240,12 @@ def _detail_print(
     max_cat_len = max(len(c) for c in items_by_category) if items_by_category else 0
     print("-" * (max_cat_len + 15))
     for cat, amt in sorted(items_by_category.items()):
-        print(f" {cat:<{max_cat_len}}  $ {amt:>{10},.2f} ")
+        print(f" {cat:<{max_cat_len}}  {currency_symbol} {amt:>{10},.2f} ")
 
 
 def edit_transaction_command(args: argparse.Namespace) -> None:
     """Command for editing an existing transaction."""
+
     transaction_id = args.transaction_id
 
     if (
@@ -282,3 +295,19 @@ def delete_transaction_command(args: argparse.Namespace) -> None:
         print(
             f"Transaction with ID {transaction_id} not found or could not be deleted."
         )
+
+
+def configure_command(args: argparse.Namespace) -> None:
+    """Command to allow the user to configure application settings."""
+
+    config = get_config()
+    new_db_path = args.db_path or config["db_path"]
+    currency_symbol = args.currency_symbol or config["currency_symbol"]
+
+    config["db_path"] = new_db_path
+    config["currency_symbol"] = currency_symbol
+
+    with open(CONFIG_FILE, "w", encoding="utf-8") as config_file:
+        json.dump(config, config_file, indent=4)
+
+    print("Configuration saved successfully!")

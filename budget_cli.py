@@ -7,6 +7,7 @@ from models import TransactionType
 from commands_cli import (
     add_expense_command,
     add_income_command,
+    configure_command,
     delete_transaction_command,
     edit_transaction_command,
     get_transaction_command,
@@ -186,6 +187,17 @@ def create_subparsers(parser: argparse.ArgumentParser):
         help="ID of the transaction to delete. If ID is -1, deletes ALL transactions",
     )
 
+    # Subparser for configuring
+    configure_parser = subparsers.add_parser(
+        "configure", help="Change configuration items"
+    )
+    configure_parser.add_argument(
+        "-p", "--db_path", type=str, help="The path to the database file"
+    )
+    configure_parser.add_argument(
+        "-c", "--currency-symbol", type=str, help="The currency symbol to use"
+    )
+
     return subparsers
 
 
@@ -212,6 +224,8 @@ def main():
             command_function = edit_transaction_command
         elif args.command == "delete-transaction":
             command_function = delete_transaction_command
+        elif args.command == "configure":
+            command_function = configure_command
 
         if command_function:
             command_function(args)
