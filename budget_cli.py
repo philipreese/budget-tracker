@@ -220,6 +220,14 @@ def create_subparsers(parser: argparse.ArgumentParser):
         help="Sort order (ascending (default) or descending)",
     )
 
+    # Subparser for plotting expenses by category
+    plot_expenses_parser = subparsers.add_parser(
+        "plot-expenses", help="Plot expenses by category"
+    )
+    plot_expenses_parser.add_argument(
+        "-m", "--month", type=str, help="Filter expenses by month (YYYY-MM)"
+    )
+
     return subparsers
 
 
@@ -242,6 +250,7 @@ def main():
             "delete-transaction": delete_transaction_command,
             "configure": configure_command,
             "export-csv": export_transactions_to_csv_command,
+            "plot-expenses": plot_expenses_by_category_command,
         }.get(args.command)
 
         if command_function:

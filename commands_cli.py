@@ -6,18 +6,12 @@ import csv
 from datetime import date
 import json
 from typing import Any, List, Optional, Tuple
-from db import (
-    CONFIG_FILE,
-    add_transaction,
-    delete_all_transactions,
-    delete_transaction,
-    get_config,
-    get_transaction,
-    get_transactions,
-    get_transactions_by_filters,
-    update_transaction,
-)
+from db import *
 from models import TransactionType
+import matplotlib
+
+matplotlib.use("TkAgg")
+import matplotlib.pyplot as plt
 
 CSV_FILENAME = "transactions.csv"
 
@@ -340,3 +334,62 @@ def export_transactions_to_csv_command(args: argparse.Namespace) -> None:
             print(f"Transactions exported to {filename} successfully!")
     except Exception as e:
         print(f"Error exporting to CSV: {e}")
+
+
+def plot_expenses_by_category_command(args: argparse.Namespace) -> None:
+    """Plots a bar graph of expenses by category."""
+
+    month_filter: Optional[str] = args.month
+    year_filter: Optional[str] = None
+    month_str: Optional[str] = None
+    month_int: Optional[int] = None
+
+    if month_filter:
+        try:
+            year_filter, month_str = month_filter.split("-")
+            month_int = int(month_str)
+            if not (1 <= month_int <= 12 and len(year_filter) == 4):
+                raise ValueError
+        except ValueError:
+            print(f"Error: Invalit month format. Please use YYYY-MM")
+            return
+
+    start_date: Optional[str] = (
+        f"{year_filter}-{month_str}-01" if month_filter else None
+    )
+    end_date: Optional[str] = None
+    if year_filter and month_int:
+        end_date = (
+            f"{year_filter}-{month_str}-"
+            + str(calendar.monthrange(int(year_filter), int(month_int))[1])
+            if month_filter
+            else None
+        )
+
+    transactions = get_transactions(start_date, end_date, order_by="date")
+    expenses_by_category: dict[str, float] = {}
+    for t in transactions:
+        if t[5] == "expense":
+            category = t[3]
+            amount = t[4]
+            expenses_by_category[category] = (
+                expenses_by_category.get(category, 0) + amount
+            )
+
+    if not expenses_by_category:
+        print("No expenses found for the specified period.")
+        return
+
+    categories = list(expenses_by_category.keys())
+    spending = list(expenses_by_category.values())
+
+    plt.figure(figsize=(10, 6))  # type: ignore
+    plt.bar(categories, spending, color="skyblue")  # type: ignore
+    plt.xlabel("Expense Category")  # type: ignore
+    plt.ylabel("Total Spending")  # type: ignore
+    plt.title(  # type: ignore
+        f"Expenses by Category {'for ' + month_filter if month_filter else 'Overall'}"
+    )
+    plt.xticks(rotation=45, ha="right")  # type: ignore
+    plt.tight_layout()
+    plt.show()  # type: ignore

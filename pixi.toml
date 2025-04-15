@@ -10,3 +10,4 @@ budget-tracker = "python -m budget_cli"
 
 [dependencies]
 python = ">=3.13.2,<3.14"
+matplotlib = ">=3.10.1,<4"

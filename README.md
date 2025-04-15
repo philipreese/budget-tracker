@@ -2,7 +2,7 @@
 
 ## Command Line Interface
 
-usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,get-transactions,view-summary,edit-transaction,delete-transaction,configure,export-csv}
+usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,get-transactions,view-summary,edit-transaction,delete-transaction,configure,export-csv,plot-expenses}
 
 | positional argument |                description                 |
 | :-----------------: | :----------------------------------------: |
@@ -15,6 +15,7 @@ usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,get-transactio
 | delete-transaction  |          Delete transaction by id          |
 |      configure      |         Change configuration items         |
 |     export-csv      |         Export transactions to CSV         |
+|    plot-expenses    |         Plot expenses by category          |
 
 |   option   |           description           |
 | :--------: | :-----------------------------: |
@@ -137,3 +138,13 @@ usage: budget_cli.py export-csv [-h] [-s START_DATE] [-e END_DATE] [-c CATEGORY]
 |         -f, --filename FILENAME         |      The filename of the CSV to export to      |
 | -o, --order-by {date,desc,cat,amt,type} |          Sort transactions by column           |
 |    -od, --order-direction {asc,desc}    | Sort order (ascending (default) or descending) |
+
+### plot-expenses
+
+usage: budget_cli.py plot-expenses [-h] [-m MONTH]
+
+
+|      option       |            description             |
+| :---------------: | :--------------------------------: |
+|    -h, --help     |  show this help message and exit   |
+| -m, --month MONTH | Filter expenses by month (YYYY-MM) |
