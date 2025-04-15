@@ -1,11 +1,16 @@
 """Holds the database functions for the Budget Tracker."""
 
+import json
+import os
 import sqlite3
 from typing import Optional, Tuple, List, Any
 
 from models import TransactionType
 
-DATABASE_NAME: str = "budget.db"
+CONFIG_FILE = "config.json"
+DEFAULT_DATABASE_NAME: str = "budget.db"
+DEFAULT_CURRENCY: str = "$"
+
 SEED_DATA_FILE: str = "seed_data.json"
 SELECT_TRANSACTIONS_TABLE = """
     SELECT name FROM sqlite_master WHERE type='table' AND name='transactions';
@@ -29,9 +34,31 @@ GET_TRANSACTIONS = "SELECT * FROM transactions"
 DELETE_TRANSACTION = "DELETE FROM transactions WHERE id = ?"
 
 
+def get_config() -> dict[str, str]:
+    """Reads the configuration from a JSON file or returns defaults."""
+    config: dict[str, str] = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                config = json.load(f)
+        except json.JSONDecodeError:
+            print(f"Warning: Invalid JSON in {CONFIG_FILE}. Using defaults.")
+    return {
+        "db_path": config.get("db_path", DEFAULT_DATABASE_NAME),
+        "currency_symbol": config.get("currency_symbol", DEFAULT_CURRENCY),
+    }
+
+
+def get_database_path() -> str:
+    """Gets the database path from the configuration."""
+    config = get_config()
+    return config.get("db_path", DEFAULT_DATABASE_NAME)
+
+
 def connect() -> Tuple[sqlite3.Connection, sqlite3.Cursor]:
     """Connects to the SQLite database."""
-    conn = sqlite3.connect(DATABASE_NAME)
+    database_path = get_database_path()
+    conn = sqlite3.connect(database_path)
     return conn, conn.cursor()
 
 
@@ -278,7 +305,6 @@ def delete_all_transactions() -> bool:
 
 def seed() -> bool:
     """Reads sample transactions from a JSON file and populates the database."""
-    import json
 
     conn: sqlite3.Connection | None = None
     try:
@@ -307,7 +333,7 @@ def seed() -> bool:
                     )
             conn.commit()
             close(conn)
-        print("Database seeded with sample transactions.")
+        print(f"Database seeded with {len(transactions)} sample transactions.")
         return True
     except FileNotFoundError:
         print(f"Error: {SEED_DATA_FILE} not found.")

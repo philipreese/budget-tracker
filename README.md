@@ -2,7 +2,7 @@
 
 ## Command Line Interface
 
-usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,get-transactions,view-summary,edit-transaction,delete-transaction}
+usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,get-transactions,view-summary,edit-transaction,delete-transaction,configure}
 
 | positional argument |                description                 |
 | :-----------------: | :----------------------------------------: |
@@ -13,6 +13,7 @@ usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,get-transactio
 |    view-summary     |          View transaction summary          |
 |  edit-transaction   |        Edit an existing transaction        |
 | delete-transaction  |          Delete transaction by id          |
+|      configure      |         Change configuration items         |
 
 |   option   |           description           |
 | :--------: | :-----------------------------: |
@@ -104,6 +105,19 @@ usage: budget_cli.py delete-transaction [-h] transaction_id
 | positional argument |                              description                               |
 | :-----------------: | :--------------------------------------------------------------------: |
 |   transaction_id    | ID of the transaction to delete. If ID is -1, deletes ALL transactions |
+
+|   option   |           description           |
+| :--------: | :-----------------------------: |
+| -h, --help | show this help message and exit |
+
+### configure
+
+usage: budget_cli.py configure [-h] [-p DB_PATH] [-c CURRENCY_SYMBOL]
+
+|          positional argument          |          description          |
+| :-----------------------------------: | :---------------------------: |
+|         -p, --db_path DB_PATH         | The path to the database file |
+| -c, --currency-symbol CURRENCY_SYMBOL |  The currency symbol to use   |
 
 |   option   |           description           |
 | :--------: | :-----------------------------: |
