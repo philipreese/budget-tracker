@@ -6,8 +6,8 @@ import csv
 from datetime import date
 import json
 from typing import Any, List, Optional, Tuple
-from db import *
-from models import TransactionType
+from db.db import *
+from cli.models import TransactionType
 import matplotlib
 
 matplotlib.use("TkAgg")
@@ -32,10 +32,8 @@ def add_transaction_command(
     """Adds a transaction (income or expense) based on arguments."""
     transaction_date = args.date if args.date else str(date.today())
     amount = args.amount
-    category = args.category if args.category else "other"
-    description = (
-        args.description if args.description else f"other {transaction_type.value}"
-    )
+    category = args.category
+    description = args.description
 
     transaction_id = add_transaction(
         transaction_date, description, category, amount, transaction_type

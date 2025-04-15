@@ -1,13 +1,14 @@
 [workspace]
-authors = ["philipreese <pbreese42@gmail.com>"]
 channels = ["conda-forge"]
 name = "budget-tracker"
 platforms = ["win-64", "linux-64"]
 version = "0.1.0"
 
 [tasks]
-budget-tracker = "python -m budget_cli"
+cli = "python -m cli.main"
 
 [dependencies]
 python = ">=3.13.2,<3.14"
 matplotlib = ">=3.10.1,<4"
+fastapi = ">=0.115.12,<0.116"
+uvicorn = ">=0.34.1,<0.35"

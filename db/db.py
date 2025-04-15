@@ -4,8 +4,7 @@ import json
 import os
 import sqlite3
 from typing import Optional, Tuple, List, Any
-
-from models import TransactionType
+from cli.models import TransactionType
 
 CONFIG_FILE = "config.json"
 DEFAULT_DATABASE_NAME: str = "budget.db"

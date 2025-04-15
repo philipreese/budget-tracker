@@ -2,6 +2,13 @@
 
 ## Command Line Interface
 
+All commands can be run with `pixi run cli ...` from the root level rather than 
+
+```
+cd cli
+python -m main.py ...
+```
+
 usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,get-transactions,view-summary,edit-transaction,delete-transaction,configure,export-csv,plot-expenses}
 
 | positional argument |                description                 |
@@ -30,8 +37,8 @@ usage: budget_cli.py add-income [-h] [-d DATE] -a AMOUNT [-c CATEGORY] [-desc DE
 |            -h, --help            |          show this help message and exit           |
 |       -a, --amount AMOUNT        |                 Transaction amount                 |
 |         -d, --date DATE          |  Transaction date (YYYY-MM-DD), default is today   |
-|     -c, --category CATEGORY      |      Transaction category, default is "other"      |
-| -desc, --description DESCRIPTION | Transaction description, default is "other income" |
+|     -c, --category CATEGORY      |      Transaction category, default is "Other"      |
+| -desc, --description DESCRIPTION | Transaction description, default is "Other Income" |
 
 ### add-expense
 
@@ -42,8 +49,8 @@ usage: budget_cli.py add-expense [-h] [-d DATE] -a AMOUNT [-c CATEGORY] [-desc D
 |            -h, --help            |           show this help message and exit           |
 |       -a, --amount AMOUNT        |                 Transaction amount                  |
 |         -d, --date DATE          |   Transaction date (YYYY-MM-DD), default is today   |
-|     -c, --category CATEGORY      |      Transaction category, default is "other"       |
-| -desc, --description DESCRIPTION | Transaction description, default is "other expense" |
+|     -c, --category CATEGORY      |      Transaction category, default is "Other"       |
+| -desc, --description DESCRIPTION | Transaction description, default is "Other Expense" |
 
 ### get-transaction
 
