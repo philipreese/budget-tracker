@@ -4,16 +4,7 @@ import argparse
 from typing import Callable, Optional
 from models import TransactionType
 
-from commands_cli import (
-    add_expense_command,
-    add_income_command,
-    configure_command,
-    delete_transaction_command,
-    edit_transaction_command,
-    get_transaction_command,
-    get_transactions_command,
-    view_summary_command,
-)
+from commands_cli import *
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -198,6 +189,45 @@ def create_subparsers(parser: argparse.ArgumentParser):
         "-c", "--currency-symbol", type=str, help="The currency symbol to use"
     )
 
+    # Subparser for exporting transactions to CSV
+    export_csv_subparser = subparsers.add_parser(
+        "export-csv", help="Export transactions to CSV"
+    )
+    export_csv_subparser.add_argument(
+        "-s", "--start-date", type=str, help="Start date for filtering (YYYY-MM-DD)"
+    )
+    export_csv_subparser.add_argument(
+        "-e", "--end-date", type=str, help="End date for filtering (YYYY-MM-DD)"
+    )
+    export_csv_subparser.add_argument(
+        "-c", "--category", type=str, help="Category to filter by"
+    )
+    export_csv_subparser.add_argument(
+        "-f", "--filename", type=str, help="The filename of the CSV to export to"
+    )
+    export_csv_subparser.add_argument(
+        "-o",
+        "--order-by",
+        type=str,
+        choices=["date", "desc", "cat", "amt", "type"],
+        help="Sort transactions by column",
+    )
+    export_csv_subparser.add_argument(
+        "-od",
+        "--order-direction",
+        type=str,
+        choices=["asc", "desc"],
+        help="Sort order (ascending (default) or descending)",
+    )
+
+    # Subparser for plotting expenses by category
+    plot_expenses_parser = subparsers.add_parser(
+        "plot-expenses", help="Plot expenses by category"
+    )
+    plot_expenses_parser.add_argument(
+        "-m", "--month", type=str, help="Filter expenses by month (YYYY-MM)"
+    )
+
     return subparsers
 
 
@@ -210,22 +240,18 @@ def main():
     command_function: Optional[Callable[[argparse.Namespace], None]] = None
 
     if args.command:
-        if args.command == "add-income":
-            command_function = add_income_command
-        elif args.command == "add-expense":
-            command_function = add_expense_command
-        elif args.command == "view-summary":
-            command_function = view_summary_command
-        elif args.command == "get-transaction":
-            command_function = get_transaction_command
-        elif args.command == "get-transactions":
-            command_function = get_transactions_command
-        elif args.command == "edit-transaction":
-            command_function = edit_transaction_command
-        elif args.command == "delete-transaction":
-            command_function = delete_transaction_command
-        elif args.command == "configure":
-            command_function = configure_command
+        command_function = {
+            "add-income": add_income_command,
+            "add-expense": add_expense_command,
+            "view-summary": view_summary_command,
+            "get-transaction": get_transaction_command,
+            "get-transactions": get_transactions_command,
+            "edit-transaction": edit_transaction_command,
+            "delete-transaction": delete_transaction_command,
+            "configure": configure_command,
+            "export-csv": export_transactions_to_csv_command,
+            "plot-expenses": plot_expenses_by_category_command,
+        }.get(args.command)
 
         if command_function:
             command_function(args)
