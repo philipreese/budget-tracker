@@ -2,6 +2,7 @@
 
 import argparse
 import calendar
+import csv
 from datetime import date
 import json
 from typing import Any, List, Optional, Tuple
@@ -17,6 +18,8 @@ from db import (
     update_transaction,
 )
 from models import TransactionType
+
+CSV_FILENAME = "transactions.csv"
 
 
 def add_income_command(args: argparse.Namespace) -> None:
@@ -311,3 +314,29 @@ def configure_command(args: argparse.Namespace) -> None:
         json.dump(config, config_file, indent=4)
 
     print("Configuration saved successfully!")
+
+
+def export_transactions_to_csv_command(args: argparse.Namespace) -> None:
+    """Exports transactions to a CSV file."""
+
+    start_date: Optional[str] = args.start_date
+    end_date: Optional[str] = args.end_date
+    category: Optional[str] = args.category
+    filename: Optional[str] = args.filename
+    order_by: Optional[str] = args.order_by
+    order_direction: Optional[str] = args.order_direction
+
+    transactions = get_transactions(
+        start_date, end_date, category, order_by, order_direction
+    )
+    filename = filename or CSV_FILENAME
+
+    try:
+        with open(filename, "w", newline="", encoding="utf-8") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(["ID", "Date", "Description", "Category", "Amount", "Type"])
+            for transaction in transactions:
+                writer.writerow(transaction)
+            print(f"Transactions exported to {filename} successfully!")
+    except Exception as e:
+        print(f"Error exporting to CSV: {e}")

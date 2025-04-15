@@ -2,7 +2,7 @@
 
 ## Command Line Interface
 
-usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,get-transactions,view-summary,edit-transaction,delete-transaction,configure}
+usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,get-transactions,view-summary,edit-transaction,delete-transaction,configure,export-csv}
 
 | positional argument |                description                 |
 | :-----------------: | :----------------------------------------: |
@@ -14,6 +14,7 @@ usage: budget_cli.py [-h] {add-income,add-expense,get-transaction,get-transactio
 |  edit-transaction   |        Edit an existing transaction        |
 | delete-transaction  |          Delete transaction by id          |
 |      configure      |         Change configuration items         |
+|     export-csv      |         Export transactions to CSV         |
 
 |   option   |           description           |
 | :--------: | :-----------------------------: |
@@ -122,3 +123,17 @@ usage: budget_cli.py configure [-h] [-p DB_PATH] [-c CURRENCY_SYMBOL]
 |   option   |           description           |
 | :--------: | :-----------------------------: |
 | -h, --help | show this help message and exit |
+
+### export-csv
+
+usage: budget_cli.py export-csv [-h] [-s START_DATE] [-e END_DATE] [-c CATEGORY] [-f FILENAME] [-o {date,desc,cat,amt,type}] [-od {asc,desc}]
+
+|                 option                  |                  description                   |
+| :-------------------------------------: | :--------------------------------------------: |
+|               -h, --help                |        show this help message and exit         |
+|       -s, --start-date START_DATE       |     Start date for filtering (YYYY-MM-DD)      |
+|         -e, --end-date END_DATE         |      End date for filtering (YYYY-MM-DD)       |
+|         -c, --category CATEGORY         |             Category to filter by              |
+|         -f, --filename FILENAME         |      The filename of the CSV to export to      |
+| -o, --order-by {date,desc,cat,amt,type} |          Sort transactions by column           |
+|    -od, --order-direction {asc,desc}    | Sort order (ascending (default) or descending) |
