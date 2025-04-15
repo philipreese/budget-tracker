@@ -239,6 +239,40 @@ def get_transactions(
         close(conn)
 
 
+def get_summary(month: Optional[str] = None) -> dict[str, float]:
+    """Calculates the total income, total expenses, and net balance."""
+
+    conn, cursor = connect()
+    income_query = "SELECT SUM(amount) FROM transactions WHERE type = 'income'"
+    expense_query = "SELECT SUM(amount) FROM transactions WHERE type = 'expense'"
+    params: List[str] = []
+
+    if month:
+        income_query += " AND strftime('%Y-%m', date) = ?"
+        expense_query += " AND strftime('%Y-%m', date) = ?"
+        params.append(month)
+
+    try:
+        cursor.execute(income_query, params)
+        total_income = cursor.fetchone()[0] or 0.0
+
+        cursor.execute(expense_query, params)
+        total_expenses = cursor.fetchone()[0] or 0.0
+
+        net_balance = total_income - total_expenses
+
+        return {
+            "total_income": round(total_income, 2),
+            "total_expenses": round(total_expenses, 2),
+            "net_balance": round(net_balance, 2),
+        }
+    except sqlite3.Error as e:
+        print(f"Error retrieving transactions: {e}")
+        return {}
+    finally:
+        close(conn)
+
+
 def update_transaction(transaction_id: int, transaction: TransactionBase) -> bool:
     """Updates an existing transaction in the database."""
     conn, cursor = connect()
