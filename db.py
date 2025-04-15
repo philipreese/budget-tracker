@@ -34,9 +34,9 @@ GET_TRANSACTIONS = "SELECT * FROM transactions"
 DELETE_TRANSACTION = "DELETE FROM transactions WHERE id = ?"
 
 
-def get_config() -> dict:
+def get_config() -> dict[str, str]:
     """Reads the configuration from a JSON file or returns defaults."""
-    config = {}
+    config: dict[str, str] = {}
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
