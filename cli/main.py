@@ -94,6 +94,13 @@ def create_subparsers(parser: argparse.ArgumentParser):
         "-c", "--category", type=str, help="Filter transactions by category"
     )
     get_transactions_parser.add_argument(
+        "-t",
+        "--type",
+        type=str,
+        choices=[transaction_type.name.lower() for transaction_type in TransactionType],
+        help="Get transactions of this type",
+    )
+    get_transactions_parser.add_argument(
         "-o",
         "--order-by",
         type=str,

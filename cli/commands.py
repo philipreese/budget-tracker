@@ -6,6 +6,7 @@ import csv
 from datetime import date
 import json
 from typing import Any, List, Optional, Tuple
+from api.models import TransactionBase
 from db.db import *
 from cli.models import TransactionType
 import matplotlib
@@ -30,14 +31,15 @@ def add_transaction_command(
     args: argparse.Namespace, transaction_type: TransactionType
 ) -> None:
     """Adds a transaction (income or expense) based on arguments."""
-    transaction_date = args.date if args.date else str(date.today())
-    amount = args.amount
-    category = args.category
-    description = args.description
-
-    transaction_id = add_transaction(
-        transaction_date, description, category, amount, transaction_type
+    transaction: TransactionBase = TransactionBase(
+        date=args.date if args.date else date.today(),
+        description=args.description,
+        category=args.category,
+        amount=args.amount,
+        type=str(transaction_type),
     )
+
+    transaction_id = add_transaction(transaction)
     if transaction_id > 0:
         print(f"{transaction_type.value.capitalize()} added successfully.")
         get_transaction_command(argparse.Namespace(transaction_id=transaction_id))
@@ -96,19 +98,20 @@ def get_transactions_command(args: argparse.Namespace) -> None:
     category: Optional[str] = args.category
     order_by: Optional[str] = args.order_by
     order_direction: Optional[str] = args.order_direction
+    type: Optional[str] = args.type
 
     transactions = get_transactions(
-        start_date, end_date, category, order_by, order_direction
+        start_date, end_date, category, order_by, order_direction, type
     )
     print(f"\n{len(transactions)} transactions found!")
     print("\n--- Transaction Details ---")
 
     if transactions:
         # Calculate max lengths for formatting
-        max_date_len = max(len(t[1]) for t in transactions)
-        max_desc_len = max(len(t[2]) for t in transactions)
-        max_cat_len = max(max(len(t[3]) for t in transactions), 8)
-        max_am_len = max(len(format(t[4], ",.2f")) + 1 for t in transactions)
+        max_date_len = max(len(str(t.date)) for t in transactions)
+        max_desc_len = max(len(t.description) for t in transactions)
+        max_cat_len = max(max(len(t.category) for t in transactions), 8)
+        max_am_len = max(len(format(t.amount, ",.2f")) + 1 for t in transactions)
 
         header = (
             f" {'Date':<{max_date_len}} | "
@@ -124,11 +127,11 @@ def get_transactions_command(args: argparse.Namespace) -> None:
         for t in transactions:
             print(
                 (
-                    f" {t[1]:<{max_date_len}} | "
-                    f"{t[2]:<{max_desc_len}} | "
-                    f"{t[3]:<{max_cat_len}} | "
-                    f"{config["currency_symbol"]} {t[4]:>{max_am_len - 1},.2f} | "
-                    f"{str(t[5]).capitalize()}"
+                    f" {str(t.date):<{max_date_len}} | "
+                    f"{t.description:<{max_desc_len}} | "
+                    f"{t.category:<{max_cat_len}} | "
+                    f"{config["currency_symbol"]} {t.amount:>{max_am_len - 1},.2f} | "
+                    f"{str(t.type).capitalize()}"
                 )
             )
     else:
@@ -260,16 +263,15 @@ def edit_transaction_command(args: argparse.Namespace) -> None:
         return
 
     # Collect updates from flags
-    new_date = args.date or transaction[1]
-    new_description = args.description or transaction[2]
-    new_category = args.category or transaction[3]
-    new_amount = args.amount or transaction[4]
-    new_type = args.type or transaction[5]
-
-    # Update the transaction in the database
-    update_transaction(
-        transaction_id, new_date, new_description, new_category, new_amount, new_type
+    transaction_create: TransactionBase = TransactionBase(
+        date=args.date or transaction[1],
+        description=args.description or transaction[2],
+        category=args.category or transaction[3],
+        amount=args.amount or transaction[4],
+        type=args.type or transaction[5],
     )
+    # Update the transaction in the database
+    update_transaction(transaction_id, transaction_create)
 
     print("Transaction updated successfully!")
     get_transaction_command(args)
@@ -367,9 +369,9 @@ def plot_expenses_by_category_command(args: argparse.Namespace) -> None:
     transactions = get_transactions(start_date, end_date, order_by="date")
     expenses_by_category: dict[str, float] = {}
     for t in transactions:
-        if t[5] == "expense":
-            category = t[3]
-            amount = t[4]
+        if t.type == "expense":
+            category = t.category
+            amount = t.amount
             expenses_by_category[category] = (
                 expenses_by_category.get(category, 0) + amount
             )
