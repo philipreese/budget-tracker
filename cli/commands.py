@@ -2,7 +2,6 @@
 
 import argparse
 import calendar
-import csv
 from datetime import date
 import json
 from typing import Any, List, Optional, Tuple
@@ -10,6 +9,8 @@ from api.models import TransactionBase
 from db.db import *
 from cli.models import TransactionType
 import matplotlib
+
+from utils.util import write_to_csv
 
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
@@ -325,15 +326,7 @@ def export_transactions_to_csv_command(args: argparse.Namespace) -> None:
     )
     filename = filename or CSV_FILENAME
 
-    try:
-        with open(filename, "w", newline="", encoding="utf-8") as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(["ID", "Date", "Description", "Category", "Amount", "Type"])
-            for transaction in transactions:
-                writer.writerow(transaction)
-            print(f"Transactions exported to {filename} successfully!")
-    except Exception as e:
-        print(f"Error exporting to CSV: {e}")
+    write_to_csv(filename, transactions)
 
 
 def plot_expenses_by_category_command(args: argparse.Namespace) -> None:
