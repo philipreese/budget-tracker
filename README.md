@@ -1,8 +1,28 @@
 # budget-tracker
 
+- [budget-tracker](#budget-tracker)
+  - [Command Line Interface](#command-line-interface)
+    - [add-income](#add-income)
+    - [add-expense](#add-expense)
+    - [get-transaction](#get-transaction)
+    - [get-transactions](#get-transactions)
+    - [view-summary](#view-summary)
+    - [edit-transaction](#edit-transaction)
+    - [delete-transaction](#delete-transaction)
+    - [configure](#configure)
+    - [export-csv](#export-csv)
+    - [plot-expenses](#plot-expenses)
+  - [REST API](#rest-api)
+    - [**POST** `/income/` Add Income](#post-income-add-income)
+    - [**GET** `/income/` Get Income](#get-income-get-income)
+    - [**POST** `/expenses/` Add Expense](#post-expenses-add-expense)
+    - [**GET** `/expenses/` Get Expense](#get-expenses-get-expense)
+    - [**GET** `/summary/` Get Summary](#get-summary-get-summary)
+    - [**GET** `/export/csv/` Export Csv](#get-exportcsv-export-csv)
+
 ## Command Line Interface
 
-All commands can be run with `pixi run cli ...` from the root level rather than 
+All commands can be run with `pixi run cli ...` from the root level rather than
 
 ```
 cd cli
@@ -151,8 +171,83 @@ usage: budget_cli.py export-csv [-h] [-s START_DATE] [-e END_DATE] [-c CATEGORY]
 
 usage: budget_cli.py plot-expenses [-h] [-m MONTH]
 
-
 |      option       |            description             |
 | :---------------: | :--------------------------------: |
 |    -h, --help     |  show this help message and exit   |
 | -m, --month MONTH | Filter expenses by month (YYYY-MM) |
+
+## REST API
+
+### **POST** `/income/` Add Income
+
+Example:
+
+```
+curl -X 'POST' \
+  'http://localhost:8000/income/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "date": "2025-04-16",
+    "description": "string",
+    "category": "string",
+    "amount": 0
+    }'
+```
+
+### **GET** `/income/` Get Income
+
+Example:
+
+```
+curl -X 'GET' \
+  'http://localhost:8000/income/?date=2025-03' \
+  -H 'accept: application/json'
+```
+
+### **POST** `/expenses/` Add Expense
+
+Example:
+
+```
+curl -X 'POST' \
+  'http://localhost:8000/expenses/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "date": "2025-04-16",
+    "description": "string",
+    "category": "string",
+    "amount": 0
+    }'
+```
+
+### **GET** `/expenses/` Get Expense
+
+Example:
+
+```
+curl -X 'GET' \
+  'http://localhost:8000/expenses/?date=2025-03&category=Groceries' \
+  -H 'accept: application/json'
+```
+
+### **GET** `/summary/` Get Summary
+
+Example:
+
+```
+curl -X 'GET' \
+  'http://localhost:8000/summary/?date=2025-03' \
+  -H 'accept: application/json'
+```
+
+### **GET** `/export/csv/` Export Csv
+
+Example:
+
+```
+curl -X 'GET' \
+  'http://localhost:8000/export/csv/?start_date=2025-01-01&end_date=2025-03-05&category=Groceries&filename=output.csv&order_by=amt&order_direction=asc' \
+  -H 'accept: application/json'
+```
