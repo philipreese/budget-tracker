@@ -4,8 +4,8 @@ import json
 import os
 import sqlite3
 from typing import Optional, Tuple, List, Any
-
-from models import TransactionType
+from api.models import TransactionBase, TransactionResponse
+from cli.models import TransactionType
 
 CONFIG_FILE = "config.json"
 DEFAULT_DATABASE_NAME: str = "budget.db"
@@ -90,13 +90,7 @@ def create_transactions_table() -> bool:
         close(conn)
 
 
-def add_transaction(
-    date: str,
-    description: str,
-    category: str,
-    amount: float,
-    transaction_type: TransactionType,
-) -> int:
+def add_transaction(transaction: TransactionBase) -> int:
     """
     Adds a new transaction to the database. Returns the ID if the add
     was successful; -1 otherwise.
@@ -105,7 +99,7 @@ def add_transaction(
     try:
         cursor.execute(
             INSERT_TRANSACTION,
-            (date, description, category, amount, str(transaction_type)),
+            (list(transaction.model_dump().values())),
         )
         conn.commit()
         transaction_id: Optional[int] = cursor.lastrowid
@@ -176,18 +170,10 @@ def get_transactions(
     category: Optional[str] = None,
     order_by: Optional[str] = None,
     order_direction: Optional[str] = None,
-) -> List[Tuple[Any, ...]]:
-    """
-    Retrieves transactions from the database with optional filtering.
+    type: Optional[str] = None,
+) -> List[TransactionResponse]:
+    """Retrieves transactions from the database with optional filtering."""
 
-    Args:
-    start_date (Optional[str]): Start date for filtering (YYYY-MM-DD).
-    end_date (Optional[str]): End date for filtering (YYYY-MM-DD).
-    category (Optional[str]): Category for filtering.
-
-    Returns:
-    List[Tuple[Any, ...]]: A list of transaction tuples.
-    """
     conn, cursor = connect()
     query = GET_TRANSACTIONS
     conditions: List[str] = []
@@ -202,6 +188,9 @@ def get_transactions(
     if category:
         conditions.append("category = ?")
         params.append(category)
+    if type:
+        conditions.append("type = ?")
+        params.append(type)
 
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
@@ -230,7 +219,19 @@ def get_transactions(
     try:
         cursor.execute(query, params)
         transactions: List[Tuple[Any, ...]] = cursor.fetchall()
-        return transactions
+
+        result: list[TransactionResponse] = []
+        for transaction in transactions:
+            transaction_dict = {
+                "id": transaction[0],
+                "date": transaction[1],
+                "description": transaction[2],
+                "category": transaction[3],
+                "amount": transaction[4],
+                "type": transaction[5],
+            }
+            result.append(TransactionResponse(**transaction_dict))
+        return result
     except sqlite3.Error as e:
         print(f"Error retrieving transactions: {e}")
         return []
@@ -238,14 +239,41 @@ def get_transactions(
         close(conn)
 
 
-def update_transaction(
-    transaction_id: int,
-    date: str,
-    description: str,
-    category: str,
-    amount: float,
-    transaction_type: str,
-) -> bool:
+def get_summary(month: Optional[str] = None) -> dict[str, float]:
+    """Calculates the total income, total expenses, and net balance."""
+
+    conn, cursor = connect()
+    income_query = "SELECT SUM(amount) FROM transactions WHERE type = 'income'"
+    expense_query = "SELECT SUM(amount) FROM transactions WHERE type = 'expense'"
+    params: List[str] = []
+
+    if month:
+        income_query += " AND strftime('%Y-%m', date) = ?"
+        expense_query += " AND strftime('%Y-%m', date) = ?"
+        params.append(month)
+
+    try:
+        cursor.execute(income_query, params)
+        total_income = cursor.fetchone()[0] or 0.0
+
+        cursor.execute(expense_query, params)
+        total_expenses = cursor.fetchone()[0] or 0.0
+
+        net_balance = total_income - total_expenses
+
+        return {
+            "total_income": round(total_income, 2),
+            "total_expenses": round(total_expenses, 2),
+            "net_balance": round(net_balance, 2),
+        }
+    except sqlite3.Error as e:
+        print(f"Error retrieving transactions: {e}")
+        return {}
+    finally:
+        close(conn)
+
+
+def update_transaction(transaction_id: int, transaction: TransactionBase) -> bool:
     """Updates an existing transaction in the database."""
     conn, cursor = connect()
     try:
@@ -255,7 +283,7 @@ def update_transaction(
             SET date = ?, description = ?, category = ?, amount = ?, type = ?
             WHERE id = ?
             """,
-            (date, description, category, amount, transaction_type, transaction_id),
+            (*list(transaction.model_dump().values()), transaction_id),
         )
         conn.commit()
         close(conn)

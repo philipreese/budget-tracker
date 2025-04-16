@@ -2,9 +2,8 @@
 
 import argparse
 from typing import Callable, Optional
-from models import TransactionType
-
-from commands_cli import *
+from cli.models import TransactionType
+from cli.commands import *
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -31,15 +30,15 @@ def create_subparsers(parser: argparse.ArgumentParser):
         "-c",
         "--category",
         type=str,
-        default="other",
-        help='Transaction category, default is "other"',
+        default="Other",
+        help='Transaction category, default is "Other"',
     )
     add_income_parser.add_argument(
         "-desc",
         "--description",
         type=str,
-        default="other income",
-        help='Transaction description, default is "other income"',
+        default="Other Income",
+        help='Transaction description, default is "Other Income"',
     )
 
     # Subparser for adding expense
@@ -56,15 +55,15 @@ def create_subparsers(parser: argparse.ArgumentParser):
         "-c",
         "--category",
         type=str,
-        default="other",
-        help='Transaction category, default is "other"',
+        default="Other",
+        help='Transaction category, default is "Other"',
     )
     add_expense_parser.add_argument(
         "-desc",
         "--description",
         type=str,
-        default="other expense",
-        help='Transaction description, default is "other expense"',
+        default="Other Expense",
+        help='Transaction description, default is "Other Expense"',
     )
 
     # Subparser for get transaction
@@ -93,6 +92,13 @@ def create_subparsers(parser: argparse.ArgumentParser):
     )
     get_transactions_parser.add_argument(
         "-c", "--category", type=str, help="Filter transactions by category"
+    )
+    get_transactions_parser.add_argument(
+        "-t",
+        "--type",
+        type=str,
+        choices=[transaction_type.name.lower() for transaction_type in TransactionType],
+        help="Get transactions of this type",
     )
     get_transactions_parser.add_argument(
         "-o",
@@ -262,7 +268,7 @@ def main():
 
 
 if __name__ == "__main__":
-    from db import create_transactions_table
+    from db.db import create_transactions_table
 
     create_transactions_table()
     main()
